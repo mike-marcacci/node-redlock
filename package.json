@@ -4,7 +4,7 @@
   "description": "A node.js redlock implementation for distributed redis locks",
   "main": "redlock.js",
   "scripts": {
-    "test": "mocha test.js"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,9 @@
   "homepage": "https://github.com/mike-marcacci/node-redlock",
   "devDependencies": {
     "chai": "^3.0.0",
+    "coveralls": "^2.11.2",
     "mocha": "^2.2.5",
+    "mocha-lcov-reporter": "0.0.2",
     "redis": "^0.12.1"
   },
   "dependencies": {}
