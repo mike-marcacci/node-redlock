@@ -18,16 +18,12 @@ describe('Redlock', function(){
 	});
 
 	it('should throw an error if not passed any clients', function(){
-		try {
+		assert.throws(function(){
 			new Redlock({
 				retryCount: 2,
 				retryDelay: 150
 			});
-		} catch(err){
-			return;
-		}
-
-		throw(new Error('No error thrown.'));
+		});
 	});
 
 	var one;
