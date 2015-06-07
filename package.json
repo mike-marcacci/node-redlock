@@ -4,7 +4,7 @@
   "description": "A node.js redlock implementation for distributed redis locks",
   "main": "redlock.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test.js"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,10 @@
     "url": "https://github.com/mike-marcacci/node-redlock/issues"
   },
   "homepage": "https://github.com/mike-marcacci/node-redlock",
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "mocha": "^2.2.5",
+    "redis": "^0.12.1"
+  },
   "dependencies": {}
 }

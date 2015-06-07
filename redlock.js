@@ -1,8 +1,8 @@
 'use strict';
 
 // constants
-var unlockScript = 'if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end';
-var extendScript = 'if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("expire",ARGV[2]) else return 0 end';
+var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
+var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end';
 
 // defaults
 var defaults = {
@@ -42,11 +42,11 @@ function Lock(redlock, resource, value, expiration) {
 	this.expiration = expiration;
 }
 
-Lock.prototype.unlock = function unlock(lock) {
-	this.redlock.unlock(this);
+Lock.prototype.unlock = function unlock(callback) {
+	this.redlock.unlock(this, callback);
 };
 
-Lock.prototype.extend = function extend(lock, ttl, callback) {
+Lock.prototype.extend = function extend(ttl, callback) {
 	this.redlock.extend(this, ttl, callback);
 };
 
@@ -114,16 +114,16 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 	if(typeof callback === 'undefined') {
 		callback = ttl;
 		ttl = value;
-		value = self.random();
+		value = self._random();
 		request = function(server, loop){
-			return server.set(resource, value, 'NX', 'PX', loop);
+			return server.set(resource, value, 'NX', 'PX', ttl, loop);
 		};
 	}
 
 	// extend an existing lock
 	else {
 		request = function(server, loop){
-			return server.eval(extendScript, 2, resource, value, ttl, loop);
+			return server.eval(extendScript, 1, resource, value, ttl, loop);
 		};
 	}
 
@@ -150,7 +150,7 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 		});
 
 		function loop(err, response) {
-			if(response) quorum++;
+			if(response) votes++;
 			if(waiting-- > 1) return;
 
 			// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
@@ -163,15 +163,20 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 				return callback(null, lock);
 
 			// remove this lock from servers that voted for it
-			if(votes < quorum)
-				lock.unlock();
+			// if(votes < quorum)
+			// 	return lock.unlock(next);
 
-			// RETRY
-			if(attempts < self.retryCount)
-				return setTimeout(attempt, self.retryDelay);
+			return next();
 
-			// FAILED
-			return callback(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
+			function next(){
+
+				// RETRY
+				if(attempts <= self.retryCount)
+					return setTimeout(attempt, self.retryDelay);
+
+				// FAILED
+				return callback(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
+			}
 		}
 	}
 };
@@ -181,14 +186,29 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 // ------
 // This method unlocks the provided lock from all servers still persisting it. This is a
 // best-effort attempt and as such fails silently.
-Redlock.prototype.unlock = function unlock(lock) {
+Redlock.prototype.unlock = function unlock(lock, callback) {
 
-	// TODO: invalidate the lease
+	// the lock has expired
+	if(lock.expiration < Date.now()) {
+		if(typeof callback === 'function') callback();
+		return;
+	}
+
+	// invalidate the lock
+	lock.expiration = 0;
+
+	// the number of async redis calls still waiting to finish
+	var waiting = this.servers.length;
 
 	// release the lock on each server
 	this.servers.forEach(function(server){
-		server.eval(unlockScript, 1, lock.resource, lock.value);
+		server.eval(unlockScript, 1, lock.resource, lock.value, loop);
 	});
+
+	function loop(err, response) {
+		if(waiting-- > 1) return;
+		if(typeof callback === 'function') callback();
+	}
 };
 
 
@@ -199,7 +219,7 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 	var self = this;
 
 	// the lock has expired
-	if(lock.expiration >= Date.now())
+	if(lock.expiration < Date.now())
 		return callback(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.'));
 
 	// extend the lock
