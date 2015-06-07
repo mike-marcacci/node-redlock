@@ -127,9 +127,6 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 		};
 	}
 
-
-	return attempt();
-
 	function attempt(){
 		attempts++;
 
@@ -145,10 +142,6 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 		// the number of async redis calls still waiting to finish
 		var waiting = self.servers.length;
 
-		self.servers.forEach(function(server){
-			return request(server, loop);
-		});
-
 		function loop(err, response) {
 			if(response) votes++;
 			if(waiting-- > 1) return;
@@ -162,13 +155,9 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 			if(votes >= quorum && lock.expiration > Date.now())
 				return callback(null, lock);
 
+
 			// remove this lock from servers that voted for it
-			if(votes < quorum)
-				return lock.unlock(next);
-
-			return next();
-
-			function next(){
+			return lock.unlock(function(){
 
 				// RETRY
 				if(attempts <= self.retryCount)
@@ -176,9 +165,15 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 
 				// FAILED
 				return callback(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
-			}
+			});
 		}
+
+		return self.servers.forEach(function(server){
+			return request(server, loop);
+		});
 	}
+
+	return attempt();
 };
 
 

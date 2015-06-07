@@ -17,6 +17,13 @@ describe('Redlock', function(){
 		client.del(resource, done);
 	});
 
+	it('should throw an error if not passed any clients', function(){
+		assert.throws(new Redlock({
+			retryCount: 2,
+			retryDelay: 150
+		}));
+	});
+
 	var one;
 	it('should lock a resource', function(done){
 		redlock.lock(resource, 200, function(err, lock){
@@ -46,6 +53,20 @@ describe('Redlock', function(){
 	it('should unlock a resource', function(done){
 		assert(two, 'Could not run because a required previous test failed.');
 		two.unlock(done);
+	});
+
+	it('should silently fail to unlock an already-unlocked resource', function(done){
+		assert(two, 'Could not run because a required previous test failed.');
+		two.unlock(done);
+	});
+
+	it('should fail to extend a lock on an already-unlocked resource', function(done){
+		assert(two, 'Could not run because a required previous test failed.');
+		three.extend(200, function(err, lock){
+			assert.isNotNull(err);
+			assert.equal(err.name, 'LockError');
+			done();
+		});
 	});
 
 	var three;

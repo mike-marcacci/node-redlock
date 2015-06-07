@@ -25,11 +25,19 @@
   },
   "homepage": "https://github.com/mike-marcacci/node-redlock",
   "devDependencies": {
+    "blanket": "^1.1.7",
     "chai": "^3.0.0",
     "coveralls": "^2.11.2",
     "mocha": "^2.2.5",
     "mocha-lcov-reporter": "0.0.2",
     "redis": "^0.12.1"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "config": {
+    "blanket": {
+      "pattern": [
+        "redlock.js"
+      ]
+    }
+  }
 }
