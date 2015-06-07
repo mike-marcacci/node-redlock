@@ -4,7 +4,8 @@
   "description": "A node.js redlock implementation for distributed redis locks",
   "main": "redlock.js",
   "scripts": {
-    "test": "mocha"
+    "test": "istanbul cover mocha",
+    "test-ci": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls"
   },
   "repository": {
     "type": "git",
@@ -25,11 +26,10 @@
   },
   "homepage": "https://github.com/mike-marcacci/node-redlock",
   "devDependencies": {
-    "blanket": "^1.1.7",
     "chai": "^3.0.0",
     "coveralls": "^2.11.2",
+    "istanbul": "^0.3.14",
     "mocha": "^2.2.5",
-    "mocha-lcov-reporter": "0.0.2",
     "redis": "^0.12.1"
   },
   "dependencies": {},
