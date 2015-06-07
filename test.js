@@ -68,7 +68,7 @@ describe('Redlock', function(){
 			if(err) throw err;
 			assert.isObject(lock);
 			assert.isAbove(lock.expiration, Date.now()-1);
-			assert.isAbove(lock.expiration, three.expiration);
+			assert.isAbove(lock.expiration, three.expiration-1);
 			four = lock;
 			done();
 		});
