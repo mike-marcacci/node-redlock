@@ -163,8 +163,8 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 				return callback(null, lock);
 
 			// remove this lock from servers that voted for it
-			// if(votes < quorum)
-			// 	return lock.unlock(next);
+			if(votes < quorum)
+				return lock.unlock(next);
 
 			return next();
 
