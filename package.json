@@ -1,0 +1,28 @@
+{
+  "name": "redlock",
+  "version": "0.0.0",
+  "description": "A node.js redlock implementation for distributed redis locks",
+  "main": "redlock.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mike-marcacci/node-redlock.git"
+  },
+  "keywords": [
+    "nodejs",
+    "iojs",
+    "redlock",
+    "distributed",
+    "lock",
+    "redis"
+  ],
+  "author": "Mike Marcacci",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mike-marcacci/node-redlock/issues"
+  },
+  "homepage": "https://github.com/mike-marcacci/node-redlock",
+  "dependencies": {}
+}
