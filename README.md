@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/mike-marcacci/node-redlock.svg)](https://travis-ci.org/mike-marcacci/node-redlock)
+[![Coverage Status](https://coveralls.io/repos/mike-marcacci/node-redlock/badge.svg)](https://coveralls.io/r/mike-marcacci/node-redlock)
+
 Redlock
 =======
 This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and clustered redis environments, and is fault tolerant in the latter.

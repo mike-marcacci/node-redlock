@@ -22,7 +22,7 @@ describe('Redlock', function(){
 		redlock.lock(resource, 200, function(err, lock){
 			if(err) throw err;
 			assert.isObject(lock);
-			assert.isAbove(lock.expiration, Date.now());
+			assert.isAbove(lock.expiration, Date.now()-1);
 			one = lock;
 			done();
 		});
@@ -35,8 +35,8 @@ describe('Redlock', function(){
 		redlock.lock(resource, 800, function(err, lock){
 			if(err) throw err;
 			assert.isObject(lock);
-			assert.isAbove(lock.expiration, Date.now());
-			assert.isAbove(Date.now(), one.expiration);
+			assert.isAbove(lock.expiration, Date.now()-1);
+			assert.isAbove(Date.now()+1, one.expiration);
 			two = lock;
 			two_expiration = lock.expiration;
 			done();
@@ -54,8 +54,8 @@ describe('Redlock', function(){
 		redlock.lock(resource, 800, function(err, lock){
 			if(err) throw err;
 			assert.isObject(lock);
-			assert.isAbove(lock.expiration, Date.now());
-			assert.isBelow(Date.now(), two_expiration);
+			assert.isAbove(lock.expiration, Date.now()-1);
+			assert.isBelow(Date.now()-1, two_expiration);
 			three = lock;
 			done();
 		});
@@ -67,7 +67,7 @@ describe('Redlock', function(){
 		three.extend(800, function(err, lock){
 			if(err) throw err;
 			assert.isObject(lock);
-			assert.isAbove(lock.expiration, Date.now());
+			assert.isAbove(lock.expiration, Date.now()-1);
 			assert.isAbove(lock.expiration, three.expiration);
 			four = lock;
 			done();
