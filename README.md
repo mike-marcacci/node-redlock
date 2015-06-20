@@ -1,3 +1,4 @@
+[![npm version](https://badge.fury.io/js/redlock.svg)](https://www.npmjs.com/package/redlock)
 [![Build Status](https://travis-ci.org/mike-marcacci/node-redlock.svg)](https://travis-ci.org/mike-marcacci/node-redlock)
 [![Coverage Status](https://coveralls.io/repos/mike-marcacci/node-redlock/badge.svg)](https://coveralls.io/r/mike-marcacci/node-redlock)
 
