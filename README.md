@@ -4,7 +4,7 @@
 
 Redlock
 =======
-This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and clustered redis environments, and is fault tolerant in the latter.
+This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-master environments, and is fault tolerant in the latter. Full support for redis cluster using [ioredis](https://github.com/luin/ioredis) is planned and will be available shortly.
 
 Installation
 ------------
