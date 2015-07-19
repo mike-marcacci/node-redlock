@@ -57,10 +57,10 @@ Lock.prototype.extend = function extend(ttl, callback) {
 
 // Redlock
 // -------
-// A redlock object is instantiated with a required `options` parameter and at least one redis
-// client parameter. Properties of the Redlock object should NOT be changed after it is first
-// used, as doing so could have unintended consequences for currently-processing locks.
-function Redlock(options) {
+// A redlock object is instantiated with an array of at least one redis client and an optional
+// `options` object. Properties of the Redlock object should NOT be changed after it is first
+// used, as doing so could have unintended consequences for live locks.
+function Redlock(clients, options) {
 	// set default options
 	options = options || {};
 	this.driftFactor = options.driftFactor || defaults.driftFactor;
@@ -68,7 +68,7 @@ function Redlock(options) {
 	this.retryDelay  = options.retryDelay  || defaults.retryDelay;
 	
 	// set the redis servers from additional arguments
-	this.servers = Array.prototype.slice.call(arguments, 1);
+	this.servers = clients;
 	if(this.servers.length === 0)
 		throw new Error('Redlock must be instantiated with at least one redis server.');
 }

@@ -28,6 +28,7 @@
   "devDependencies": {
     "chai": "^3.0.0",
     "coveralls": "^2.11.2",
+    "ioredis": "^1.6.1",
     "istanbul": "^0.3.14",
     "mocha": "^2.2.5",
     "redis": "^0.12.1"

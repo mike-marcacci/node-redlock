@@ -16,14 +16,18 @@ Configuration
 -------------
 Redlock can use [node redis](https://github.com/mranney/node_redis) or any compatible redis library to keep its client connections.
 
-A redlock object is instantiated with a required `options` parameter and at least one redis client parameter. Properties of the Redlock object should **NOT** be changed after it is first used, as doing so could have unintended consequences for currently-processing locks.
+A redlock object is instantiated with an array of at least one redis client and an optional`options` object. Properties of the Redlock object should NOT be changed after it is firstused, as doing so could have unintended consequences for live locks.
 
 ```js
 var client1 = require('redis').createClient(6379, 'redis1.example.com');
 var client2 = require('redis').createClient(6379, 'redis2.example.com');
+var client3 = require('redis').createClient(6379, 'redis3.example.com');
 var Redlock = require('redlock');
 
 var redlock = new Redlock(
+	// you should have one client for each redis node
+	// in your cluster
+	[client1, client2, client3],
 	{
 		// the expected clock drift; for more details
 		// see http://redis.io/topics/distlock
@@ -35,12 +39,7 @@ var redlock = new Redlock(
 		
 		// the time in ms between attempts
 		retryDelay:  200
-	},
-	
-	// you should have one client for each redis node
-	// in your cluster
-	client1,
-	client2
+	}
 );
 ```
 
