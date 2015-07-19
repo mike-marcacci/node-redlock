@@ -4,7 +4,14 @@
 
 Redlock
 =======
-This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-master environments, and is fault tolerant in the latter. Full support for redis cluster using [ioredis](https://github.com/luin/ioredis) is planned and will be available shortly.
+This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
+
+###High-Availability Recommendations
+- Use at least 3 independent servers or clusters
+- Use an odd number of independent redis ***servers*** for most installations
+- Use an odd number of independent redis ***clusters*** for massive installations
+- When possible, distribute redis nodes across different physical machines
+
 
 Installation
 ------------
@@ -14,7 +21,7 @@ npm install --save redlock
 
 Configuration
 -------------
-Redlock can use [node redis](https://github.com/mranney/node_redis) or any compatible redis library to keep its client connections.
+Redlock can use [node redis](https://github.com/mranney/node_redis), [ioredis](https://github.com/luin/ioredis) or any other compatible redis library to keep its client connections.
 
 A redlock object is instantiated with an array of at least one redis client and an optional`options` object. Properties of the Redlock object should NOT be changed after it is firstused, as doing so could have unintended consequences for live locks.
 

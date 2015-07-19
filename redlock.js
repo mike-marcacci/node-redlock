@@ -32,7 +32,7 @@ LockError.prototype.constructor = LockError;
 
 // Lock
 // ----
-// An object of this type is returned when a resource is successfully locked. It contains a
+// An object of this type is returned when a resource is successfully locked. It contains
 // convenience methods `unlock` and `extend` which perform the associated Redlock method on
 // itself.
 function Lock(redlock, resource, value, expiration) {
