@@ -3,8 +3,8 @@
 var assert = require('chai').assert;
 var Redlock = require('./redlock');
 
-test('node-redis', [require('redis').createClient()]);
-test('ioredis', [new (require('ioredis'))()]);
+test('node-redis', [require('redis').createClient('6379', '192.168.59.103')]);
+test('ioredis', [new (require('ioredis'))('6379', '192.168.59.103')]);
 
 function test(name, clients){
 	var redlock = new Redlock(clients, {
@@ -122,6 +122,16 @@ function test(name, clients){
 					done();
 				});
 			}, four.expiration - Date.now() + 100);
+		});
+
+		it('should issue another lock immediately after a resource is expired', function(done){
+			assert(four, 'Could not run because a required previous test failed.');
+			redlock.lock(resource, 800, function(err, lock){
+				if(err) throw err;
+				assert.isObject(lock);
+				assert.isAbove(lock.expiration, Date.now()-1);
+				done();
+			});
 		});
 
 		after(function(done){
