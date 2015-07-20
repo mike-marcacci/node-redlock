@@ -124,6 +124,16 @@ function test(name, clients){
 			}, four.expiration - Date.now() + 100);
 		});
 
+		it('should issue another lock immediately after a resource is expired', function(done){
+			assert(four, 'Could not run because a required previous test failed.');
+			redlock.lock(resource, 800, function(err, lock){
+				if(err) throw err;
+				assert.isObject(lock);
+				assert.isAbove(lock.expiration, Date.now()-1);
+				done();
+			});
+		});
+
 		after(function(done){
 			var err;
 			var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
