@@ -1,5 +1,7 @@
 'use strict';
 
+var Promise = require('bluebird');
+
 // constants
 var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end';
@@ -43,11 +45,11 @@ function Lock(redlock, resource, value, expiration) {
 }
 
 Lock.prototype.unlock = function unlock(callback) {
-	this.redlock.unlock(this, callback);
+	return this.redlock.unlock(this, callback);
 };
 
 Lock.prototype.extend = function extend(ttl, callback) {
-	this.redlock.extend(this, ttl, callback);
+	return this.redlock.extend(this, ttl, callback);
 };
 
 
@@ -75,16 +77,96 @@ function Redlock(clients, options) {
 
 
 // lock
-// ------
+// ----
 // This method locks a resource using the redlock algorithm.
-//
-// ###Creating New Locks:
 //
 // ```js
 // redlock.lock(
 //   'some-resource',       // the resource to lock
 //   2000,                  // ttl in ms
-//   function(err, lock) {  // callback function
+//   function(err, lock) {  // callback function (optional)
+//     ...
+//   }
+// )
+// ```
+Redlock.prototype.lock = function lock(resource, ttl, callback) {
+	return this._lock(resource, null, ttl, callback);
+};
+
+
+// unlock
+// ------
+// This method unlocks the provided lock from all servers still persisting it. This is a
+// best-effort attempt and as such fails silently.
+Redlock.prototype.unlock = function unlock(lock, callback) {
+	var self = this;
+	var promise = new Promise(function(resolve, reject) {
+
+		// the lock has expired
+		if(lock.expiration < Date.now()) {
+			return resolve();
+		}
+
+		// invalidate the lock
+		lock.expiration = 0;
+
+		// the number of async redis calls still waiting to finish
+		var waiting = self.servers.length;
+
+		// release the lock on each server
+		self.servers.forEach(function(server){
+			server.eval(unlockScript, 1, lock.resource, lock.value, loop);
+		});
+
+		function loop(err, response) {
+			if(waiting-- > 1) return;
+			return resolve();
+		}
+	});
+
+	// support callback pattern
+	if(typeof callback === 'function') {
+		promise = promise
+		.catch(function(err){
+			callback(err, null);
+			return Promise.reject(err);
+		})
+		.then(function(){
+			callback(null, null);
+		});
+	}
+
+	return promise;
+};
+
+
+// extend
+// ------
+// This method extends a valid lock by the provided `ttl`.
+Redlock.prototype.extend = function extend(lock, ttl, callback) {
+	var self = this;
+
+	// the lock has expired
+	if(lock.expiration < Date.now())
+		return callback(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.'));
+
+	// extend the lock
+	return self._lock(lock.resource, lock.value, ttl, callback);
+};
+
+
+// _lock
+// -----
+// This method locks a resource using the redlock algorithm.
+//
+// ###Creating New Locks:
+//
+// ```js
+// redlock._lock(
+//   'some-resource',       // the resource to lock
+//   null,                  // no original lock value
+//   2000,                  // ttl in ms
+//   function(err, lock) {  // callback function (optional)
 //     ...
 //   }
 // )
@@ -93,16 +175,16 @@ function Redlock(clients, options) {
 // ###Extending Existing Locks:
 //
 // ```js
-// redlock.lock(
+// redlock._lock(
 //   'some-resource',       // the resource to lock
 //   'dkkk18g4gy39dx6r',    // the value of the original lock
 //   2000,                  // ttl in ms
-//   function(err, lock) {  // callback function
+//   function(err, lock) {  // callback function (optional)
 //     ...
 //   }
 // )
 // ```
-Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
+Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 	var self = this;
 	var request; 
 
@@ -111,7 +193,7 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 
 
 	// create a new lock
-	if(typeof callback === 'undefined') {
+	if(value === null) {
 		callback = ttl;
 		ttl = value;
 		value = self._random();
@@ -174,51 +256,6 @@ Redlock.prototype.lock = function lock(resource, value, ttl, callback) {
 	}
 
 	return attempt();
-};
-
-
-// unlock
-// ------
-// This method unlocks the provided lock from all servers still persisting it. This is a
-// best-effort attempt and as such fails silently.
-Redlock.prototype.unlock = function unlock(lock, callback) {
-
-	// the lock has expired
-	if(lock.expiration < Date.now()) {
-		if(typeof callback === 'function') callback();
-		return;
-	}
-
-	// invalidate the lock
-	lock.expiration = 0;
-
-	// the number of async redis calls still waiting to finish
-	var waiting = this.servers.length;
-
-	// release the lock on each server
-	this.servers.forEach(function(server){
-		server.eval(unlockScript, 1, lock.resource, lock.value, loop);
-	});
-
-	function loop(err, response) {
-		if(waiting-- > 1) return;
-		if(typeof callback === 'function') callback();
-	}
-};
-
-
-// extend
-// ------
-// This method extends a valid lock by the provided `ttl`.
-Redlock.prototype.extend = function extend(lock, ttl, callback) {
-	var self = this;
-
-	// the lock has expired
-	if(lock.expiration < Date.now())
-		return callback(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.'));
-
-	// extend the lock
-	return self.lock(lock.resource, lock.value, ttl, callback);
 };
 
 
