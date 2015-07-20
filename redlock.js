@@ -100,7 +100,7 @@ Redlock.prototype.lock = function lock(resource, ttl, callback) {
 // best-effort attempt and as such fails silently.
 Redlock.prototype.unlock = function unlock(lock, callback) {
 	var self = this;
-	var promise = new Promise(function(resolve, reject) {
+	return new Promise(function(resolve, reject) {
 
 		// the lock has expired
 		if(lock.expiration < Date.now()) {
@@ -122,21 +122,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			if(waiting-- > 1) return;
 			return resolve();
 		}
-	});
-
-	// support callback pattern
-	if(typeof callback === 'function') {
-		promise = promise
-		.catch(function(err){
-			callback(err, null);
-			return Promise.reject(err);
-		})
-		.then(function(){
-			callback(null, null);
-		});
-	}
-
-	return promise;
+	}).nodeify(callback);
 };
 
 
@@ -148,7 +134,7 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 
 	// the lock has expired
 	if(lock.expiration < Date.now())
-		return callback(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.'));
+		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.')).nodeify(callback);
 
 	// extend the lock
 	return self._lock(lock.resource, lock.value, ttl, callback);
@@ -186,76 +172,76 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 // ```
 Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 	var self = this;
-	var request; 
+	return new Promise(function(resolve, reject) {
+		var request; 
 
-	// the number of times we have attempted this lock
-	var attempts = 0;
-
-
-	// create a new lock
-	if(value === null) {
-		callback = ttl;
-		ttl = value;
-		value = self._random();
-		request = function(server, loop){
-			return server.set(resource, value, 'NX', 'PX', ttl, loop);
-		};
-	}
-
-	// extend an existing lock
-	else {
-		request = function(server, loop){
-			return server.eval(extendScript, 1, resource, value, ttl, loop);
-		};
-	}
-
-	function attempt(){
-		attempts++;
-
-		// the time when this attempt started
-		var start = Date.now();
-
-		// the number of servers which have agreed to this lock
-		var votes = 0;
-
-		// the number of votes needed for consensus
-		var quorum = Math.floor(self.servers.length / 2) + 1;
-
-		// the number of async redis calls still waiting to finish
-		var waiting = self.servers.length;
-
-		function loop(err, response) {
-			if(response) votes++;
-			if(waiting-- > 1) return;
-
-			// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
-			// plus the configured allowable drift factor
-			var drift = Math.round(self.driftFactor * ttl) + 2;
-			var lock = new Lock(self, resource, value, start + ttl - drift);
-
-			// SUCCESS: there is concensus and the lock is not expired
-			if(votes >= quorum && lock.expiration > Date.now())
-				return callback(null, lock);
+		// the number of times we have attempted this lock
+		var attempts = 0;
 
 
-			// remove this lock from servers that voted for it
-			return lock.unlock(function(){
+		// create a new lock
+		if(value === null) {
+			value = self._random();
+			request = function(server, loop){
+				return server.set(resource, value, 'NX', 'PX', ttl, loop);
+			};
+		}
 
-				// RETRY
-				if(attempts <= self.retryCount)
-					return setTimeout(attempt, self.retryDelay);
+		// extend an existing lock
+		else {
+			request = function(server, loop){
+				return server.eval(extendScript, 1, resource, value, ttl, loop);
+			};
+		}
 
-				// FAILED
-				return callback(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
+		function attempt(){
+			attempts++;
+
+			// the time when this attempt started
+			var start = Date.now();
+
+			// the number of servers which have agreed to this lock
+			var votes = 0;
+
+			// the number of votes needed for consensus
+			var quorum = Math.floor(self.servers.length / 2) + 1;
+
+			// the number of async redis calls still waiting to finish
+			var waiting = self.servers.length;
+
+			function loop(err, response) {
+				if(response) votes++;
+				if(waiting-- > 1) return;
+
+				// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
+				// plus the configured allowable drift factor
+				var drift = Math.round(self.driftFactor * ttl) + 2;
+				var lock = new Lock(self, resource, value, start + ttl - drift);
+
+				// SUCCESS: there is concensus and the lock is not expired
+				if(votes >= quorum && lock.expiration > Date.now())
+					return resolve(lock);
+
+
+				// remove this lock from servers that voted for it
+				return lock.unlock(function(){
+
+					// RETRY
+					if(attempts <= self.retryCount)
+						return setTimeout(attempt, self.retryDelay);
+
+					// FAILED
+					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
+				});
+			}
+
+			return self.servers.forEach(function(server){
+				return request(server, loop);
 			});
 		}
 
-		return self.servers.forEach(function(server){
-			return request(server, loop);
-		});
-	}
-
-	return attempt();
+		return attempt();
+	}).nodeify(callback);
 };
 
 
