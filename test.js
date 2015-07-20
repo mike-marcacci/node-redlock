@@ -3,8 +3,8 @@
 var assert = require('chai').assert;
 var Redlock = require('./redlock');
 
-test('node-redis', [require('redis').createClient('6379', '192.168.59.103')]);
-test('ioredis', [new (require('ioredis'))('6379', '192.168.59.103')]);
+test('node-redis', [require('redis').createClient()]);
+test('ioredis', [new (require('ioredis'))()]);
 
 function test(name, clients){
 	var redlock = new Redlock(clients, {
