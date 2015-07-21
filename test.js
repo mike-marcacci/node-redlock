@@ -7,6 +7,7 @@ var Redlock = require('./redlock');
 test('https://www.npmjs.com/package/redis', [require('redis').createClient()]);
 test('https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
 
+/* istanbul ignore next */
 function test(name, clients){
 	var redlock = new Redlock(clients, {
 		retryCount: 2,
