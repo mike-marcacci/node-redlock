@@ -89,8 +89,29 @@ function Redlock(clients, options) {
 //   }
 // )
 // ```
+Redlock.prototype.acquire =
 Redlock.prototype.lock = function lock(resource, ttl, callback) {
 	return this._lock(resource, null, ttl, callback);
+};
+
+// lock
+// ----
+// This method locks a resource using the redlock algorithm,
+// and returns a bluebird disposer.
+//
+// ```js
+// using(
+//   redlock.disposer(
+//     'some-resource',       // the resource to lock
+//     2000                   // ttl in ms
+//   ),
+//   function(lock) {
+//     ...
+//   }
+// );
+// ```
+Redlock.prototype.disposer = function disposer(resource, ttl) {
+	return this._lock(resource, null, ttl).disposer(function(lock){ return lock.unlock(); });
 };
 
 
@@ -98,6 +119,7 @@ Redlock.prototype.lock = function lock(resource, ttl, callback) {
 // ------
 // This method unlocks the provided lock from all servers still persisting it. This is a
 // best-effort attempt and as such fails silently.
+Redlock.prototype.release =
 Redlock.prototype.unlock = function unlock(lock, callback) {
 	var self = this;
 	return new Promise(function(resolve, reject) {
@@ -122,7 +144,10 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			if(waiting-- > 1) return;
 			return resolve();
 		}
-	}).nodeify(callback);
+	})
+
+	// optionally run callback
+	.nodeify(callback);
 };
 
 
@@ -137,7 +162,17 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.')).nodeify(callback);
 
 	// extend the lock
-	return self._lock(lock.resource, lock.value, ttl, callback);
+	return self._lock(lock.resource, lock.value, ttl)
+
+	// modify and return the original lock object
+	.then(function(extension){
+		lock.value      = extension.value;
+		lock.expiration = extension.expiration;
+		return lock;
+	})
+
+	// optionally run callback
+	.nodeify(callback);
 };
 
 
@@ -241,7 +276,10 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		}
 
 		return attempt();
-	}).nodeify(callback);
+	})
+
+	// optionally run callback
+	.nodeify(callback);
 };
 
 

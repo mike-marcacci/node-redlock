@@ -51,8 +51,105 @@ var redlock = new Redlock(
 ```
 
 
-Usage
------
+Usage (promise style)
+---------------------
+
+
+###Locking & Unocking
+
+```js
+
+// the string identifier for the resource you want to lock
+var resource = 'locks:account:322456';
+
+// the maximum amount of time you want the resource locked,
+// keeping in mind that you can extend the lock up until
+// the point when it expires
+var ttl = 1000;
+
+redlock.lock(resource, ttl).then(function(lock) {
+
+	// ...do something here...
+
+	// unlock your resource when you are done
+	return lock.unlock();
+});
+
+```
+
+
+###Locking and Extending
+
+```js
+redlock.lock('locks:account:322456', 1000).then(function(lock) {
+
+	// ...do something here...
+
+	// if you need more time, you can continue to extend
+	// the lock as long as you never let it expire
+	return lock.extend(1000).then(function(lock){
+
+		// ...do something here...
+
+		// unlock your resource when you are done
+		return lock.unlock();
+	});
+});
+
+```
+
+
+Usage (disposer style)
+----------------------
+
+
+###Locking & Unocking
+
+```js
+var using = require('bluebird').using;
+
+// the string identifier for the resource you want to lock
+var resource = 'locks:account:322456';
+
+// the maximum amount of time you want the resource locked,
+// keeping in mind that you can extend the lock up until
+// the point when it expires
+var ttl = 1000;
+
+using(redlock.disposer(resource, ttl), function(lock) {
+
+	// ...do something here...
+
+}); // <-- unlock is automatically handled by bluebird
+
+```
+
+
+###Locking and Extending
+
+```js
+using(redlock.disposer('locks:account:322456', 1000), function(lock) {
+
+	// ...do something here...
+
+	// if you need more time, you can continue to extend
+	// the lock until it expires
+	return lock.extend(1000).then(function(extended){
+
+		// Note that redlock modifies the original lock,
+		// so the vars `lock` and `extended` point to the
+		// exact same object
+
+		// ...do something here...
+
+	});
+}); // <-- unlock is automatically handled by bluebird
+
+```
+
+
+Usage (callback style)
+----------------------
 
 
 ###Locking & Unocking

@@ -1,6 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
+var Promise = require('bluebird');
 var Redlock = require('./redlock');
 
 test('https://www.npmjs.com/package/redis', [require('redis').createClient()]);
@@ -100,6 +101,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
+					assert.equal(three, lock);
 					four = lock;
 					done();
 				});
@@ -230,6 +232,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
+					assert.equal(three, lock);
 					four = lock;
 					done();
 				}, done);
@@ -257,6 +260,87 @@ function test(name, clients){
 						done();
 					});
 				}, four.expiration - Date.now() + 100);
+			});
+
+			after(function(done){
+				var err;
+				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+				for (var i = clients.length - 1; i >= 0; i--) {
+					clients[i].del(resource, cb);
+				}
+			});
+		});
+
+		describe('disposer', function(){
+			before(function(done){
+				var err;
+				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+				for (var i = clients.length - 1; i >= 0; i--) {
+					clients[i].del(resource, cb);
+				}
+			});
+
+			var one;
+			var one_expiration;
+			it('should automatically release a lock after the using block', function(done){
+				Promise.using(
+					redlock.disposer(resource, 200),
+					function(lock){
+						assert.isObject(lock);
+						assert.isAbove(lock.expiration, Date.now()-1);
+						one = lock;
+						one_expiration = lock.expiration;
+					}
+				).done(done, done);
+			});
+
+			var two;
+			var two_expiration;
+			it('should issue another lock immediately after a resource is unlocked', function(done){
+				assert(one_expiration, 'Could not run because a required previous test failed.');
+				Promise.using(
+					redlock.disposer(resource, 800),
+					function(lock){
+						assert.isObject(lock);
+						assert.isAbove(lock.expiration, Date.now()-1);
+						assert.isBelow(Date.now()-1, one_expiration);
+						two = lock;
+						two_expiration = lock.expiration;
+					}
+				).done(done, done);
+			});
+
+			var three_original, three_extended;
+			var three_original_expiration;
+			var three_extended_expiration;
+			it('should automatically release an extended lock', function(done){
+				assert(two_expiration, 'Could not run because a required previous test failed.');
+				Promise.using(
+					redlock.disposer(resource, 200),
+					function(lock){
+						assert.isObject(lock);
+						assert.isAbove(lock.expiration, Date.now()-1);
+						assert.isBelow(Date.now()-1, two_expiration);
+						three_original = lock;
+						three_original_expiration = lock.expiration;
+						
+						return Promise.delay(100)
+						.then(function(){ return lock.extend(200); })
+						.then(function(extended) {
+							assert.isObject(extended);
+							assert.isAbove(extended.expiration, Date.now()-1);
+							assert.isBelow(Date.now()-1, three_original_expiration);
+							assert.isAbove(extended.expiration, three_original_expiration);
+							assert.equal(extended, lock);
+							three_extended = extended;
+							three_extended_expiration = extended.expiration;
+						});
+					}
+				)
+				.then(function(){
+					assert.equal(three_original.expiration, 0);
+					assert.equal(three_extended.expiration, 0);
+				}).done(done, done);
 			});
 
 			after(function(done){
