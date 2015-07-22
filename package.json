@@ -33,7 +33,9 @@
     "mocha": "^2.2.5",
     "redis": "^0.12.1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "bluebird": "^2.9.34"
+  },
   "config": {
     "blanket": {
       "pattern": [
