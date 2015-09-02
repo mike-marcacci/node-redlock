@@ -65,9 +65,9 @@ Lock.prototype.extend = function extend(ttl, callback) {
 function Redlock(clients, options) {
 	// set default options
 	options = options || {};
-	this.driftFactor = options.driftFactor || defaults.driftFactor;
-	this.retryCount  = options.retryCount  || defaults.retryCount;
-	this.retryDelay  = options.retryDelay  || defaults.retryDelay;
+	this.driftFactor = typeof options.driftFactor === 'number' ? options.driftFactor : defaults.driftFactor;
+	this.retryCount  = typeof options.retryCount  === 'number' ? options.retryCount  : defaults.retryCount;
+	this.retryDelay  = typeof options.retryDelay  === 'number' ? options.retryDelay  : defaults.retryDelay;
 	
 	// set the redis servers from additional arguments
 	this.servers = clients;
