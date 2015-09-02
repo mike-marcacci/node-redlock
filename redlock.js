@@ -1,5 +1,6 @@
 'use strict';
 
+var util    = require('util');
 var Promise = require('bluebird');
 
 // constants
@@ -21,11 +22,13 @@ var defaults = {
 // ---------
 // This error is returned when there is an error locking a resource.
 function LockError(message) {
+	Error.call(this);
+	Error.captureStackTrace(this, LockError);
 	this.name = 'LockError';
 	this.message = message || 'Failed to lock the resource.';
 }
-LockError.prototype = new Error();
-LockError.prototype.constructor = LockError;
+
+util.inherits(LockError, Error);
 
 
 
@@ -74,6 +77,10 @@ function Redlock(clients, options) {
 	if(this.servers.length === 0)
 		throw new Error('Redlock must be instantiated with at least one redis server.');
 }
+
+// Attach a reference to LockError per issue #7, which allows the application to use instanceof
+// to destinguish between error types.
+Redlock.LockError = LockError;
 
 
 // lock

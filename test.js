@@ -76,7 +76,7 @@ function test(name, clients){
 				assert(two, 'Could not run because a required previous test failed.');
 				two.extend(200, function(err, lock){
 					assert.isNotNull(err);
-					assert.equal(err.name, 'LockError');
+					assert.instanceOf(err, Redlock.LockError);
 					done();
 				});
 			});
@@ -112,7 +112,7 @@ function test(name, clients){
 				assert(four, 'Could not run because a required previous test failed.');
 				redlock.lock(resource, 200, function(err, lock){
 					assert.isNotNull(err);
-					assert.equal(err.name, 'LockError');
+					assert.instanceOf(err, Redlock.LockError);
 					done();
 				});
 			});
@@ -122,7 +122,7 @@ function test(name, clients){
 				setTimeout(function(){
 					three.extend(800, function(err, lock){
 						assert.isNotNull(err);
-						assert.equal(err.name, 'LockError');
+						assert.instanceOf(err, Redlock.LockError);
 						done();
 					});
 				}, four.expiration - Date.now() + 100);
@@ -207,7 +207,7 @@ function test(name, clients){
 				.done(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
-					assert.equal(err.name, 'LockError');
+					assert.instanceOf(err, Redlock.LockError);
 					done();
 				});
 			});
@@ -245,7 +245,7 @@ function test(name, clients){
 				.done(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
-					assert.equal(err.name, 'LockError');
+					assert.instanceOf(err, Redlock.LockError);
 					done();
 				});
 			});
@@ -257,7 +257,7 @@ function test(name, clients){
 					.done(function(){
 						done(new Error('Should have failed with a LockError'));
 					}, function(err){
-						assert.equal(err.name, 'LockError');
+						assert.instanceOf(err, Redlock.LockError);
 						done();
 					});
 				}, four.expiration - Date.now() + 100);
