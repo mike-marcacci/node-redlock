@@ -1,7 +1,8 @@
 'use strict';
 
-var util    = require('util');
-var Promise = require('bluebird');
+var util         = require('util');
+var Promise      = require('bluebird');
+var EventEmitter = require('events');
 
 // constants
 var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
@@ -71,12 +72,16 @@ function Redlock(clients, options) {
 	this.driftFactor = typeof options.driftFactor === 'number' ? options.driftFactor : defaults.driftFactor;
 	this.retryCount  = typeof options.retryCount  === 'number' ? options.retryCount  : defaults.retryCount;
 	this.retryDelay  = typeof options.retryDelay  === 'number' ? options.retryDelay  : defaults.retryDelay;
-	
+
 	// set the redis servers from additional arguments
 	this.servers = clients;
 	if(this.servers.length === 0)
 		throw new Error('Redlock must be instantiated with at least one redis server.');
 }
+
+// Inherit all the EventEmitter methods, like `on`, and `off`
+util.inherits(Redlock, EventEmitter);
+
 
 // Attach a reference to LockError per issue #7, which allows the application to use instanceof
 // to destinguish between error types.
@@ -148,6 +153,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 		});
 
 		function loop(err, response) {
+			if(err) self.emit('clientError', err);
 			if(waiting-- > 1) return;
 			return resolve();
 		}
@@ -215,7 +221,7 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 	var self = this;
 	return new Promise(function(resolve, reject) {
-		var request; 
+		var request;
 
 		// the number of times we have attempted this lock
 		var attempts = 0;
@@ -252,6 +258,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 			var waiting = self.servers.length;
 
 			function loop(err, response) {
+				if(err) self.emit('clientError', err);
 				if(response) votes++;
 				if(waiting-- > 1) return;
 

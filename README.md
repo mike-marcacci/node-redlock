@@ -23,7 +23,7 @@ Configuration
 -------------
 Redlock can use [node redis](https://github.com/mranney/node_redis), [ioredis](https://github.com/luin/ioredis) or any other compatible redis library to keep its client connections.
 
-A redlock object is instantiated with an array of at least one redis client and an optional`options` object. Properties of the Redlock object should NOT be changed after it is firstused, as doing so could have unintended consequences for live locks.
+A redlock object is instantiated with an array of at least one redis client and an optional `options` object. Properties of the Redlock object should NOT be changed after it is firstused, as doing so could have unintended consequences for live locks.
 
 ```js
 var client1 = require('redis').createClient(6379, 'redis1.example.com');
@@ -39,15 +39,33 @@ var redlock = new Redlock(
 		// the expected clock drift; for more details
 		// see http://redis.io/topics/distlock
 		driftFactor: 0.01,
-		
+
 		// the max number of times Redlock will attempt
 		// to lock a resource before erroring
 		retryCount:  3,
-		
+
 		// the time in ms between attempts
 		retryDelay:  200
 	}
 );
+```
+
+
+Error Handling
+--------------
+
+Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation. If you want to write logs or take another action when a redis client fails, you can listen for the `clientError` event:
+
+```js
+
+// ...
+
+redlock.on('clientError', function(err) {
+	console.error('A redis error has occurred:', err);
+});
+
+// ...
+
 ```
 
 
@@ -170,7 +188,7 @@ redlock.lock(resource, ttl, function(err, lock) {
 	if(err) {
 		// ...
 	}
-	
+
 	// we have the lock
 	else {
 
@@ -195,7 +213,7 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 	if(err) {
 		// ...
 	}
-	
+
 	// we have the lock
 	else {
 
