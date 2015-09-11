@@ -4,6 +4,11 @@ var util         = require('util');
 var Promise      = require('bluebird');
 var EventEmitter = require('events');
 
+// support the event library provided by node < 0.11.0
+if(typeof EventEmitter.EventEmitter === 'function')
+	EventEmitter = EventEmitter.EventEmitter;
+
+
 // constants
 var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end';
