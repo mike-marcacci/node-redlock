@@ -127,27 +127,33 @@ Redlock.prototype.lock = function lock(resource, ttl, callback) {
 //   }
 // );
 // ```
-Redlock.prototype.disposer = function disposer(resource, ttl) {
-	return this._lock(resource, null, ttl).disposer(function(lock){ return lock.unlock(); });
+Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
+	errorHandler = errorHandler || function(err) {};
+	return this._lock(resource, null, ttl).disposer(function(lock){
+		return lock.unlock().catch(errorHandler);
+	});
 };
 
 
 // unlock
 // ------
-// This method unlocks the provided lock from all servers still persisting it. This is a
-// best-effort attempt and as such fails silently.
+// This method unlocks the provided lock from all servers still persisting it. It will fail
+// with an error if it is unable to release the lock on a quorum of nodes, but will make no
+// attempt to restore the lock on nodes that failed to release. It is safe to re-attempt an
+// unlock or to ignore the error, as the lock will automatically expire after its timeout.
 Redlock.prototype.release =
 Redlock.prototype.unlock = function unlock(lock, callback) {
 	var self = this;
 	return new Promise(function(resolve, reject) {
 
-		// the lock has expired
-		if(lock.expiration < Date.now()) {
-			return resolve();
-		}
-
 		// invalidate the lock
 		lock.expiration = 0;
+
+		// the number of servers which have agreed to release this lock
+		var votes = 0;
+
+		// the number of votes needed for consensus
+		var quorum = Math.floor(self.servers.length / 2) + 1;
 
 		// the number of async redis calls still waiting to finish
 		var waiting = self.servers.length;
@@ -159,8 +165,23 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 
 		function loop(err, response) {
 			if(err) self.emit('clientError', err);
+
+			// - if the lock was released by this call, it will return 1
+			// - if the lock has already been released, it will return 0
+			//    - it may have been re-acquired by another process
+			//    - it may hava already been manually released
+			//    - it may have expired
+			if(typeof response === 'number' && (response === 0 || response === 1))
+				votes++;
+
 			if(waiting-- > 1) return;
-			return resolve();
+
+			// SUCCESS: there is concensus and the lock is released
+			if(votes >= quorum)
+				return resolve();
+
+			// FAILURE: the lock could not be released
+			return reject(new LockError('Unable to fully release the lock on resource "' + lock.resource + '".'));
 		}
 	})
 

@@ -37,12 +37,17 @@ function test(name, clients){
 		});
 
 		it('emits a clientError event when a client error occurs', function(done){
-			redlock.once('clientError', function(err) {
+			var emitted = 0;
+			function test(err) {
 				assert.isNotNull(err);
-				done();
-			});
+				emitted++;
+			}
+			redlock.on('clientError', test);
 			redlock.lock(error, 200, function(err, lock){
+				redlock.removeListener('clientError', test);
 				assert.isNotNull(err);
+				assert.equal(emitted, 3);
+				done();
 			});
 		});
 
@@ -86,9 +91,19 @@ function test(name, clients){
 				two.unlock(done);
 			});
 
-			it('should silently fail to unlock an already-unlocked resource', function(done) {
+			it('should unlock an already-unlocked resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock(done);
+			});
+
+			it('should error when unable to fully release a resource', function(done) {
+				assert(two, 'Could not run because a required previous test failed.');
+				var failingTwo = Object.create(two);
+				failingTwo.resource = error;
+				failingTwo.unlock(function(err) {
+					assert.isNotNull(err);
+					done();
+				});
 			});
 
 			it('should fail to extend a lock on an already-unlocked resource', function(done) {
@@ -206,9 +221,19 @@ function test(name, clients){
 				two.unlock().done(done, done);
 			});
 
-			it('should silently fail to unlock an already-unlocked resource', function(done) {
+			it('should unlock an already-unlocked resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock().done(done, done);
+			});
+
+			it('should error when unable to fully release a resource', function(done) {
+				assert(two, 'Could not run because a required previous test failed.');
+				var failingTwo = Object.create(two);
+				failingTwo.resource = error;
+				failingTwo.unlock().done(done, function(err) {
+					assert.isNotNull(err);
+					done();
+				});
 			});
 
 			it('should fail to extend a lock on an already-unlocked resource', function(done) {
@@ -319,6 +344,25 @@ function test(name, clients){
 						two_expiration = lock.expiration;
 					}
 				).done(done, done);
+			});
+
+			it('should call unlockErrorHandler when unable to fully release a resource', function(done) {
+				assert(two, 'Could not run because a required previous test failed.');
+				var errs = 0;
+				var lock;
+				Promise.using(
+					redlock.disposer(resource, 800, function(err) {
+						errs++;
+					}),
+					function(l){
+						lock = l;
+						lock.resource = error;
+					}
+				).done(function() {
+					assert.equal(errs, 1);
+					lock.resource = resource;
+					lock.unlock().done(done, done);
+				}, done);
 			});
 
 			var three_original, three_extended;

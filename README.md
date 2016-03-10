@@ -90,7 +90,12 @@ redlock.lock(resource, ttl).then(function(lock) {
 	// ...do something here...
 
 	// unlock your resource when you are done
-	return lock.unlock();
+	return lock.unlock()
+	.catch(function(err) {
+		// we weren't able to reach redis; your lock will eventually
+		// expire, but you probably want to log this error
+		console.error(err);
+	});
 });
 
 ```
@@ -110,7 +115,12 @@ redlock.lock('locks:account:322456', 1000).then(function(lock) {
 		// ...do something here...
 
 		// unlock your resource when you are done
-		return lock.unlock();
+		return lock.unlock()
+		.catch(function(err) {
+			// we weren't able to reach redis; your lock will eventually
+			// expire, but you probably want to log this error
+			console.error(err);
+		});
 	});
 });
 
@@ -134,7 +144,15 @@ var resource = 'locks:account:322456';
 // the point when it expires
 var ttl = 1000;
 
-using(redlock.disposer(resource, ttl), function(lock) {
+// if we weren't able to reach redis, your lock will eventually
+// expire, but you probably want to do something like log that
+// an error occurred; if you don't pass a handler, this error
+// will be ignored
+function unlockErrorHandler(err) {
+	console.error(err);
+}
+
+using(redlock.disposer(resource, ttl, unlockErrorHandler), function(lock) {
 
 	// ...do something here...
 
@@ -146,7 +164,7 @@ using(redlock.disposer(resource, ttl), function(lock) {
 ###Locking and Extending
 
 ```js
-using(redlock.disposer('locks:account:322456', 1000), function(lock) {
+using(redlock.disposer('locks:account:322456', 1000, unlockErrorHandler), function(lock) {
 
 	// ...do something here...
 
@@ -197,7 +215,11 @@ redlock.lock(resource, ttl, function(err, lock) {
 
 
 		// unlock your resource when you are done
-		lock.unlock();
+		lock.unlock(function(err) {
+			// we weren't able to reach redis; your lock will eventually
+			// expire, but you probably want to log this error
+			console.error(err);
+		});
 	}
 });
 
@@ -245,7 +267,7 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 API Docs
 --------
 
-###`Redlock.lock(resource, ttl, callback)`
+###`Redlock.lock(resource, ttl, ?callback)`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms until the lock expires
 - `callback (function)` callback returning:
@@ -253,12 +275,13 @@ API Docs
 	- `lock (Lock)`
 
 
-###`Redlock.unlock(lock, callback)`
+###`Redlock.unlock(lock, ?callback)`
 - `lock (Lock)` lock to be released
-- `callback (function)` callback with no returning arguments
+- `callback (function)` callback returning:
+	- `err (Error)`
 
 
-###`Redlock.extend(lock, ttl, callback)`
+###`Redlock.extend(lock, ttl, ?callback)`
 - `lock (Lock)` lock to be extended
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
@@ -266,11 +289,19 @@ API Docs
 	- `lock (Lock)`
 
 
-###`Lock.unlock(callback)`
-- `callback (function)` callback with no returning arguments
+###`Redlock.disposer(resource, ttl, ?unlockErrorHandler)`
+- `resource (string)` resource to be locked
+- `ttl (number)` time in ms to extend the lock's expiration
+- `callback (function)` error handler called with:
+	- `err (Error)`
 
 
-###`Lock.extend(ttl, callback)`
+###`Lock.unlock(?callback)`
+- `callback (function)` callback returning:
+	- `err (Error)`
+
+
+###`Lock.extend(ttl, ?callback)`
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
 	- `err (Error)`
