@@ -1,6 +1,6 @@
 {
   "name": "redlock",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "A node.js redlock implementation for distributed redis locks",
   "main": "redlock.js",
   "scripts": {
