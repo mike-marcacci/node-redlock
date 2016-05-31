@@ -89,6 +89,7 @@ function test(name, clients){
 			it('should unlock a resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock(done);
+				assert.equal(two.expiration, 0, 'Failed to immediately invalidate the lock.')
 			});
 
 			it('should unlock an already-unlocked resource', function(done) {

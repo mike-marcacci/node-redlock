@@ -146,7 +146,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 	var self = this;
 	return new Promise(function(resolve, reject) {
 
-		// invalidate the lock
+		// immediately invalidate the lock
 		lock.expiration = 0;
 
 		// the number of servers which have agreed to release this lock
