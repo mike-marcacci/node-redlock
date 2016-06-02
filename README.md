@@ -6,11 +6,33 @@ Redlock
 =======
 This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
 
+- [Installation](#installation)
+- [Usage (Promise Style)](#usage-promise-style)
+- [Usage (Disposer Style)](#usage-disposer-style)
+- [Usage (Callback Style)](#usage-callback-style)
+- [API Docs](#api-docs)
+
 ###High-Availability Recommendations
 - Use at least 3 independent servers or clusters
 - Use an odd number of independent redis ***servers*** for most installations
 - Use an odd number of independent redis ***clusters*** for massive installations
 - When possible, distribute redis nodes across different physical machines
+
+
+###Using Cluster/Sentinel
+It is completely possible to use a *single* redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
+
+Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
+
+This is why redlock allows you to specify multiple independent nodes/clusters: by requiring consensus between them, we can safely take out or fail-over a minority of nodes without invalidating active locks.
+
+To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
+
+
+###How do I check if something is locked?
+Redlock cannot tell you *with certainty* if a resource is currently locked. For example, if you are on the smaller side of a network partition you will fail to acquire a lock, but you don't know if the lock exists on the other side; all you know is that you can't guarantee exclusivity on yours.
+
+That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable",
 
 
 Installation
