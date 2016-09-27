@@ -1,6 +1,7 @@
 'use strict';
 
 var util         = require('util');
+var crypto       = require('crypto');
 var Promise      = require('bluebird');
 var EventEmitter = require('events');
 
@@ -324,7 +325,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 
 
 Redlock.prototype._random = function _random(){
-	return Math.random().toString(36).slice(2);
+	return crypto.randomBytes(16).toString('hex');
 };
 
 
