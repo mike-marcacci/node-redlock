@@ -11,6 +11,7 @@ if(typeof EventEmitter.EventEmitter === 'function')
 
 
 // constants
+var lockScript = 'return redis.call("set", KEYS[1], ARGV[1], "NX", "PX", ARGV[2])';
 var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end';
 
@@ -261,7 +262,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.set(resource, value, 'NX', 'PX', ttl, loop);
+				return server.eval(lockScript, 1, resource, value, ttl, loop);
 			};
 		}
 
