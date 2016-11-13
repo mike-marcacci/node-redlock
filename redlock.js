@@ -62,6 +62,9 @@ Lock.prototype.extend = function extend(ttl, callback) {
 	return this.redlock.extend(this, ttl, callback);
 };
 
+// Attach a reference to Lock, which allows the application to use instanceof
+// to ensure type.
+Redlock.Lock = Lock;
 
 
 

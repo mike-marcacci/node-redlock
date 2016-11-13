@@ -65,6 +65,7 @@ function test(name, clients){
 				redlock.lock(resource, 200, function(err, lock){
 					if(err) throw err;
 					assert.isObject(lock);
+					assert.instanceOf(lock, Redlock.Lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					one = lock;
 					done();
