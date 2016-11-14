@@ -82,6 +82,9 @@ function Redlock(clients, options) {
 	this.driftFactor = typeof options.driftFactor === 'number' ? options.driftFactor : defaults.driftFactor;
 	this.retryCount  = typeof options.retryCount  === 'number' ? options.retryCount  : defaults.retryCount;
 	this.retryDelay  = typeof options.retryDelay  === 'number' ? options.retryDelay  : defaults.retryDelay;
+	this.lockScript  = typeof options.lockScript  === 'function' ? options.lockScript(lockScript) : lockScript;
+	this.unlockScript = typeof options.unlockScript  === 'function' ? options.unlockScript(unlockScript) : unlockScript;
+	this.extendScript = typeof options.extendScript  === 'function' ? options.extendScript(extendScript) : extendScript;
 
 	// set the redis servers from additional arguments
 	this.servers = clients;
@@ -165,7 +168,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-			server.eval(unlockScript, 1, lock.resource, lock.value, loop);
+			server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
 		});
 
 		function loop(err, response) {
@@ -262,14 +265,14 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.eval(lockScript, 1, resource, value, ttl, loop);
+				return server.eval(self.lockScript, 1, resource, value, ttl, loop);
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-				return server.eval(extendScript, 1, resource, value, ttl, loop);
+				return server.eval(self.extendScript, 1, resource, value, ttl, loop);
 			};
 		}
 

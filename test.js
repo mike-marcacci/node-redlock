@@ -51,6 +51,19 @@ function test(name, clients){
 			});
 		});
 
+		it('supports custom script functions in options', function(){
+			var opts = {
+				lockScript: function(lockScript) { return lockScript + "and 1"},
+				unlockScript: function(unlockScript) { return unlockScript + "and 2"},
+				extendScript: function(extendScript) { return extendScript + "and 3"}
+			}
+			var customRedlock = new Redlock(clients, opts);
+			var i = 1;
+			assert.equal(customRedlock.lockScript, redlock.lockScript + "and " + i++);
+			assert.equal(customRedlock.unlockScript, redlock.unlockScript + "and " + i++);
+			assert.equal(customRedlock.extendScript, redlock.extendScript + "and " + i);
+		});
+
 		describe('callbacks', function(){
 			before(function(done) {
 				var err;
