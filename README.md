@@ -95,7 +95,7 @@ Usage (promise style)
 ---------------------
 
 
-###Locking & Unocking
+###Locking & Unlocking
 
 ```js
 
@@ -153,7 +153,7 @@ Usage (disposer style)
 ----------------------
 
 
-###Locking & Unocking
+###Locking & Unlocking
 
 ```js
 var using = require('bluebird').using;
@@ -210,7 +210,7 @@ Usage (callback style)
 ----------------------
 
 
-###Locking & Unocking
+###Locking & Unlocking
 
 ```js
 
