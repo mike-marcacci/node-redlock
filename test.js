@@ -11,7 +11,8 @@ test('https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
 function test(name, clients){
 	var redlock = new Redlock(clients, {
 		retryCount: 2,
-		retryDelay: 150
+		retryDelay: 150,
+		retryJitter: 150
 	});
 
 	var resource = 'Redlock:test:resource';
@@ -31,7 +32,8 @@ function test(name, clients){
 			assert.throws(function(){
 				new Redlock([], {
 					retryCount: 2,
-					retryDelay: 150
+					retryDelay: 150,
+					retryJitter: 150
 				});
 			});
 		});
