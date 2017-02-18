@@ -12,7 +12,7 @@ function test(name, clients){
 	var redlock = new Redlock(clients, {
 		retryCount: 2,
 		retryDelay: 150,
-		retryJitter: 150
+		retryJitter: 0
 	});
 
 	var resource = 'Redlock:test:resource';
@@ -33,7 +33,7 @@ function test(name, clients){
 				new Redlock([], {
 					retryCount: 2,
 					retryDelay: 150,
-					retryJitter: 150
+					retryJitter: 0
 				});
 			});
 		});
