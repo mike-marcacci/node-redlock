@@ -55,15 +55,15 @@ function test(name, clients){
 
 		it('supports custom script functions in options', function(){
 			var opts = {
-				lockScript: function(lockScript) { return lockScript + "and 1"},
-				unlockScript: function(unlockScript) { return unlockScript + "and 2"},
-				extendScript: function(extendScript) { return extendScript + "and 3"}
-			}
+				lockScript: function(lockScript) { return lockScript + 'and 1'; },
+				unlockScript: function(unlockScript) { return unlockScript + 'and 2'; },
+				extendScript: function(extendScript) { return extendScript + 'and 3'; }
+			};
 			var customRedlock = new Redlock(clients, opts);
 			var i = 1;
-			assert.equal(customRedlock.lockScript, redlock.lockScript + "and " + i++);
-			assert.equal(customRedlock.unlockScript, redlock.unlockScript + "and " + i++);
-			assert.equal(customRedlock.extendScript, redlock.extendScript + "and " + i);
+			assert.equal(customRedlock.lockScript, redlock.lockScript + 'and ' + i++);
+			assert.equal(customRedlock.unlockScript, redlock.unlockScript + 'and ' + i++);
+			assert.equal(customRedlock.extendScript, redlock.extendScript + 'and ' + i);
 		});
 
 		describe('callbacks', function(){
@@ -105,7 +105,7 @@ function test(name, clients){
 			it('should unlock a resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock(done);
-				assert.equal(two.expiration, 0, 'Failed to immediately invalidate the lock.')
+				assert.equal(two.expiration, 0, 'Failed to immediately invalidate the lock.');
 			});
 
 			it('should unlock an already-unlocked resource', function(done) {

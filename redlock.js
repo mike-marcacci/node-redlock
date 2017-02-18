@@ -313,7 +313,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 
 					// RETRY
 					if(attempts <= self.retryCount)
-						return setTimeout(attempt, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter);
+						return setTimeout(attempt, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter));
 
 					// FAILED
 					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
