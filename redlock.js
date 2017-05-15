@@ -154,10 +154,11 @@ Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
 Redlock.prototype.release =
 Redlock.prototype.unlock = function unlock(lock, callback) {
 	var self = this;
-	return new Promise(function(resolve, reject) {
 
-		// immediately invalidate the lock
-		lock.expiration = 0;
+	// immediately invalidate the lock
+	lock.expiration = 0;
+
+	return new Promise(function(resolve, reject) {
 
 		// the number of servers which have agreed to release this lock
 		var votes = 0;

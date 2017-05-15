@@ -12,14 +12,14 @@ This is a node.js implementation of the [redlock](http://redis.io/topics/distloc
 - [Usage (Callback Style)](#usage-callback-style)
 - [API Docs](#api-docs)
 
-###High-Availability Recommendations
+### High-Availability Recommendations
 - Use at least 3 independent servers or clusters
 - Use an odd number of independent redis ***servers*** for most installations
 - Use an odd number of independent redis ***clusters*** for massive installations
 - When possible, distribute redis nodes across different physical machines
 
 
-###Using Cluster/Sentinel
+### Using Cluster/Sentinel
 It is completely possible to use a *single* redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
 
 Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
@@ -29,7 +29,7 @@ This is why redlock allows you to specify multiple independent nodes/clusters: b
 To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
 
 
-###How do I check if something is locked?
+### How do I check if something is locked?
 Redlock cannot tell you *with certainty* if a resource is currently locked. For example, if you are on the smaller side of a network partition you will fail to acquire a lock, but you don't know if the lock exists on the other side; all you know is that you can't guarantee exclusivity on yours.
 
 That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable",
@@ -100,7 +100,7 @@ Usage (promise style)
 ---------------------
 
 
-###Locking & Unlocking
+### Locking & Unlocking
 
 ```js
 
@@ -128,7 +128,7 @@ redlock.lock(resource, ttl).then(function(lock) {
 ```
 
 
-###Locking and Extending
+### Locking and Extending
 
 ```js
 redlock.lock('locks:account:322456', 1000).then(function(lock) {
@@ -158,7 +158,7 @@ Usage (disposer style)
 ----------------------
 
 
-###Locking & Unlocking
+### Locking & Unlocking
 
 ```js
 var using = require('bluebird').using;
@@ -188,7 +188,7 @@ using(redlock.disposer(resource, ttl, unlockErrorHandler), function(lock) {
 ```
 
 
-###Locking and Extending
+### Locking and Extending
 
 ```js
 using(redlock.disposer('locks:account:322456', 1000, unlockErrorHandler), function(lock) {
@@ -215,7 +215,7 @@ Usage (callback style)
 ----------------------
 
 
-###Locking & Unlocking
+### Locking & Unlocking
 
 ```js
 
@@ -253,7 +253,7 @@ redlock.lock(resource, ttl, function(err, lock) {
 ```
 
 
-###Locking and Extending
+### Locking and Extending
 
 ```js
 redlock.lock('locks:account:322456', 1000, function(err, lock) {
@@ -294,7 +294,7 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 API Docs
 --------
 
-###`Redlock.lock(resource, ttl, ?callback)`
+### `Redlock.lock(resource, ttl, ?callback)`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms until the lock expires
 - `callback (function)` callback returning:
@@ -302,13 +302,13 @@ API Docs
 	- `lock (Lock)`
 
 
-###`Redlock.unlock(lock, ?callback)`
+### `Redlock.unlock(lock, ?callback)`
 - `lock (Lock)` lock to be released
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-###`Redlock.extend(lock, ttl, ?callback)`
+### `Redlock.extend(lock, ttl, ?callback)`
 - `lock (Lock)` lock to be extended
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
@@ -316,19 +316,19 @@ API Docs
 	- `lock (Lock)`
 
 
-###`Redlock.disposer(resource, ttl, ?unlockErrorHandler)`
+### `Redlock.disposer(resource, ttl, ?unlockErrorHandler)`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` error handler called with:
 	- `err (Error)`
 
 
-###`Lock.unlock(?callback)`
+### `Lock.unlock(?callback)`
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-###`Lock.extend(ttl, ?callback)`
+### `Lock.extend(ttl, ?callback)`
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
 	- `err (Error)`
