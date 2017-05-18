@@ -20,7 +20,7 @@ var defaults = {
 	driftFactor: 0.01,
 	retryCount:  10,
 	retryDelay:  400,
-	retryJitter: 400
+	retryJitter: 200
 };
 
 
@@ -314,7 +314,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 
 					// RETRY
 					if(attempts <= self.retryCount)
-						return setTimeout(attempt, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter));
+						return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
 
 					// FAILED
 					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));

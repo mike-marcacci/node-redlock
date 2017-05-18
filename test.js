@@ -12,7 +12,7 @@ function test(name, clients){
 	var redlock = new Redlock(clients, {
 		retryCount: 2,
 		retryDelay: 150,
-		retryJitter: 0
+		retryJitter: 50
 	});
 
 	var resource = 'Redlock:test:resource';
