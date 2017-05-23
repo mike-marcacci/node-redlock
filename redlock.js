@@ -19,8 +19,8 @@ var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.c
 var defaults = {
 	driftFactor: 0.01,
 	retryCount:  10,
-	retryDelay:  400,
-	retryJitter: 200
+	retryDelay:  200,
+	retryJitter: 100
 };
 
 

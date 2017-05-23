@@ -67,12 +67,12 @@ var redlock = new Redlock(
 		retryCount:  10,
 
 		// the time in ms between attempts
-		retryDelay:  400, // time in ms
+		retryDelay:  200, // time in ms
 
 		// the max time in ms randomly added to retries
 		// to improve performance under high contention
 		// see https://www.awsarchitectureblog.com/2015/03/backoff.html
-		retryJitter:  400 // time in ms
+		retryJitter:  200 // time in ms
 	}
 );
 ```
