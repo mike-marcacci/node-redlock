@@ -28,10 +28,10 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "coveralls": "^2.11.8",
-    "ioredis": "^1.15.1",
+    "ioredis": "^3.0.0",
     "istanbul": "^0.4.2",
     "mocha": "^2.4.5",
-    "redis": "^2.4.2"
+    "redis": "^2.7.1"
   },
   "dependencies": {
     "bluebird": "^3.3.3"
