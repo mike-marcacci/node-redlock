@@ -54,8 +54,8 @@ var client3 = require('redis').createClient(6379, 'redis3.example.com');
 var Redlock = require('redlock');
 
 var redlock = new Redlock(
-	// you should have one client for each redis node
-	// in your cluster
+	// you should have one client for each independent redis node
+	// or cluster
 	[client1, client2, client3],
 	{
 		// the expected clock drift; for more details
@@ -294,7 +294,7 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 API Docs
 --------
 
-### `Redlock.lock(resource, ttl, ?callback)`
+### `Redlock.lock(resource, ttl, ?callback) => Promise<Lock>`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms until the lock expires
 - `callback (function)` callback returning:
@@ -302,13 +302,13 @@ API Docs
 	- `lock (Lock)`
 
 
-### `Redlock.unlock(lock, ?callback)`
+### `Redlock.unlock(lock, ?callback) => Promise`
 - `lock (Lock)` lock to be released
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-### `Redlock.extend(lock, ttl, ?callback)`
+### `Redlock.extend(lock, ttl, ?callback) => Promise<Lock>`
 - `lock (Lock)` lock to be extended
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
@@ -323,12 +323,12 @@ API Docs
 	- `err (Error)`
 
 
-### `Lock.unlock(?callback)`
+### `Lock.unlock(?callback) => Promise`
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-### `Lock.extend(ttl, ?callback)`
+### `Lock.extend(ttl, ?callback) => Promise<Lock>`
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
 	- `err (Error)`

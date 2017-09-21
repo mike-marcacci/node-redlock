@@ -30,11 +30,12 @@ var defaults = {
 // LockError
 // ---------
 // This error is returned when there is an error locking a resource.
-function LockError(message) {
+function LockError(message, attempts) {
 	Error.call(this);
 	Error.captureStackTrace(this, LockError);
 	this.name = 'LockError';
 	this.message = message || 'Failed to lock the resource.';
+	this.attempts = attempts;
 }
 
 util.inherits(LockError, Error);
@@ -49,11 +50,12 @@ util.inherits(LockError, Error);
 // An object of this type is returned when a resource is successfully locked. It contains
 // convenience methods `unlock` and `extend` which perform the associated Redlock method on
 // itself.
-function Lock(redlock, resource, value, expiration) {
+function Lock(redlock, resource, value, expiration, attempts) {
 	this.redlock    = redlock;
 	this.resource   = resource;
 	this.value      = value;
 	this.expiration = expiration;
+	this.attempts   = attempts;
 }
 
 Lock.prototype.unlock = function unlock(callback) {
@@ -209,7 +211,7 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 
 	// the lock has expired
 	if(lock.expiration < Date.now())
-		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.')).nodeify(callback);
+		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.', 0)).nodeify(callback);
 
 	// extend the lock
 	return self._lock(lock.resource, lock.value, ttl)
@@ -302,7 +304,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 				// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
 				// plus the configured allowable drift factor
 				var drift = Math.round(self.driftFactor * ttl) + 2;
-				var lock = new Lock(self, resource, value, start + ttl - drift);
+				var lock = new Lock(self, resource, value, start + ttl - drift, attempts);
 
 				// SUCCESS: there is concensus and the lock is not expired
 				if(votes >= quorum && lock.expiration > Date.now())
@@ -317,7 +319,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 						return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
 
 					// FAILED
-					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".'));
+					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".', attempts));
 				});
 			}
 

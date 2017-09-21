@@ -82,6 +82,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.instanceOf(lock, Redlock.Lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
+					assert.equal(lock.attempts, 1);
 					one = lock;
 					done();
 				});
@@ -96,6 +97,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(Date.now()+1, one.expiration);
+					assert.isAbove(lock.attempts, 1);
 					two = lock;
 					two_expiration = lock.expiration;
 					done();
@@ -128,6 +130,7 @@ function test(name, clients){
 				two.extend(200, function(err, lock){
 					assert.isNotNull(err);
 					assert.instanceOf(err, Redlock.LockError);
+					assert.equal(err.attempts, 0);
 					done();
 				});
 			});
@@ -140,6 +143,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isBelow(Date.now()-1, two_expiration);
+					assert.equal(lock.attempts, 1);
 					three = lock;
 					done();
 				});
@@ -153,6 +157,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
+					assert.equal(lock.attempts, 1);
 					assert.equal(three, lock);
 					four = lock;
 					done();
@@ -164,6 +169,7 @@ function test(name, clients){
 				redlock.lock(resource, 200, function(err, lock){
 					assert.isNotNull(err);
 					assert.instanceOf(err, Redlock.LockError);
+					assert.equal(err.attempts, 3);
 					done();
 				});
 			});
@@ -174,6 +180,7 @@ function test(name, clients){
 					three.extend(800, function(err, lock){
 						assert.isNotNull(err);
 						assert.instanceOf(err, Redlock.LockError);
+						assert.equal(err.attempts, 0);
 						done();
 					});
 				}, four.expiration - Date.now() + 100);
@@ -185,6 +192,7 @@ function test(name, clients){
 					if(err) throw err;
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
+					assert.equal(lock.attempts, 1);
 					done();
 				});
 			});
@@ -213,6 +221,7 @@ function test(name, clients){
 				.done(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
+					assert.equal(lock.attempts, 1);
 					one = lock;
 					done();
 				}, done);
@@ -227,6 +236,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(Date.now()+1, one.expiration);
+					assert.isAbove(lock.attempts, 1);
 					two = lock;
 					two_expiration = lock.expiration;
 					done();
@@ -260,6 +270,7 @@ function test(name, clients){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
+					assert.equal(err.attempts, 0);
 					done();
 				});
 			});
@@ -272,6 +283,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isBelow(Date.now()-1, two_expiration);
+					assert.equal(lock.attempts, 1);
 					three = lock;
 					done();
 				}, done);
@@ -285,6 +297,7 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
+					assert.equal(lock.attempts, 1);
 					assert.equal(three, lock);
 					four = lock;
 					done();
@@ -298,6 +311,7 @@ function test(name, clients){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
+					assert.equal(err.attempts, 3);
 					done();
 				});
 			});
@@ -310,6 +324,7 @@ function test(name, clients){
 						done(new Error('Should have failed with a LockError'));
 					}, function(err){
 						assert.instanceOf(err, Redlock.LockError);
+						assert.equal(err.attempts, 0);
 						done();
 					});
 				}, four.expiration - Date.now() + 100);
@@ -341,6 +356,7 @@ function test(name, clients){
 					function(lock){
 						assert.isObject(lock);
 						assert.isAbove(lock.expiration, Date.now()-1);
+						assert.equal(lock.attempts, 1);
 						one = lock;
 						one_expiration = lock.expiration;
 					}
@@ -357,6 +373,7 @@ function test(name, clients){
 						assert.isObject(lock);
 						assert.isAbove(lock.expiration, Date.now()-1);
 						assert.isBelow(Date.now()-1, one_expiration);
+						assert.equal(lock.attempts, 1);
 						two = lock;
 						two_expiration = lock.expiration;
 					}
@@ -403,6 +420,7 @@ function test(name, clients){
 							assert.isAbove(extended.expiration, Date.now()-1);
 							assert.isBelow(Date.now()-1, three_original_expiration);
 							assert.isAbove(extended.expiration, three_original_expiration);
+							assert.equal(lock.attempts, 1);
 							assert.equal(extended, lock);
 							three_extended = extended;
 							three_extended_expiration = extended.expiration;
