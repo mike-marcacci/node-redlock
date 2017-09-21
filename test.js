@@ -4,8 +4,9 @@ var assert = require('chai').assert;
 var Promise = require('bluebird');
 var Redlock = require('./redlock');
 
-test('https://www.npmjs.com/package/redis', [require('redis').createClient()]);
-test('https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
+test('single-server: https://www.npmjs.com/package/redis', [require('redis').createClient()]);
+test('single-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
+test('multi-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))({db: 1}), new (require('ioredis'))({db: 2}), new (require('ioredis'))({db: 3})]);
 
 /* istanbul ignore next */
 function test(name, clients){
@@ -48,7 +49,7 @@ function test(name, clients){
 			redlock.lock(error, 200, function(err, lock){
 				redlock.removeListener('clientError', test);
 				assert.isNotNull(err);
-				assert.equal(emitted, 3);
+				assert.equal(emitted, 3 * redlock.servers.length);
 				done();
 			});
 		});
@@ -441,6 +442,16 @@ function test(name, clients){
 				}
 			});
 		});
+
+		describe('quit', function() {
+			it('should quit all clients', function(done){
+				redlock.quit()
+				.done(function(results) {
+					assert.isArray(results);
+					done();
+				}, done);
+			});
+		})
 
 	});
 }

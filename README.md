@@ -294,7 +294,7 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 API Docs
 --------
 
-### `Redlock.lock(resource, ttl, ?callback) => Promise<Lock>`
+### `Redlock.prototype.lock(resource, ttl, ?callback) => Promise<Lock>`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms until the lock expires
 - `callback (function)` callback returning:
@@ -302,13 +302,13 @@ API Docs
 	- `lock (Lock)`
 
 
-### `Redlock.unlock(lock, ?callback) => Promise`
+### `Redlock.prototype.unlock(lock, ?callback) => Promise`
 - `lock (Lock)` lock to be released
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-### `Redlock.extend(lock, ttl, ?callback) => Promise<Lock>`
+### `Redlock.prototype.extend(lock, ttl, ?callback) => Promise<Lock>`
 - `lock (Lock)` lock to be extended
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
@@ -316,19 +316,25 @@ API Docs
 	- `lock (Lock)`
 
 
-### `Redlock.disposer(resource, ttl, ?unlockErrorHandler)`
+### `Redlock.prototype.disposer(resource, ttl, ?unlockErrorHandler)`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` error handler called with:
 	- `err (Error)`
 
 
-### `Lock.unlock(?callback) => Promise`
+### `Redlock.prototype.quit(?callback) => Promise<*[]>`
+- `callback (function)` error handler called with:
+	- `err (Error)`
+	- `*[]` results of calling `.quit()` on each client
+
+
+### `Lock.prototype.unlock(?callback) => Promise`
 - `callback (function)` callback returning:
 	- `err (Error)`
 
 
-### `Lock.extend(ttl, ?callback) => Promise<Lock>`
+### `Lock.prototype.extend(ttl, ?callback) => Promise<Lock>`
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` callback returning:
 	- `err (Error)`

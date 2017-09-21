@@ -105,6 +105,22 @@ util.inherits(Redlock, EventEmitter);
 Redlock.LockError = LockError;
 
 
+// quit
+// ----
+// This method runs `.quit()` on all client connections.
+
+Redlock.prototype.quit = function quit(callback) {
+
+	// quit all clients
+	return Promise.map(this.servers, function(client) {
+		return client.quit();
+	})
+
+	// optionally run callback
+	.nodeify(callback);
+};
+
+
 // lock
 // ----
 // This method locks a resource using the redlock algorithm.
