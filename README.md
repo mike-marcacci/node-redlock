@@ -137,6 +137,9 @@ redlock.lock('locks:account:322456', 1000).then(function(lock) {
 
 	// if you need more time, you can continue to extend
 	// the lock as long as you never let it expire
+
+	// this will extend the lock so that it expires
+	// approximitely 1s from when `extend` is called
 	return lock.extend(1000).then(function(lock){
 
 		// ...do something here...
@@ -196,7 +199,10 @@ using(redlock.disposer('locks:account:322456', 1000, unlockErrorHandler), functi
 	// ...do something here...
 
 	// if you need more time, you can continue to extend
-	// the lock until it expires
+	// the lock as long as you never let it expire
+
+	// this will extend the lock so that it expires
+	// approximitely 1s from when `extend` is called
 	return lock.extend(1000).then(function(extended){
 
 		// Note that redlock modifies the original lock,
@@ -271,7 +277,10 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 
 
 		// if you need more time, you can continue to extend
-		// the lock until it expires
+		// the lock as long as you never let it expire
+
+		// this will extend the lock so that it expires
+		// approximitely 1s from when `extend` is called
 		lock.extend(1000, function(err, lock){
 
 			// we failed to extend the lock on the resource
@@ -335,7 +344,7 @@ API Docs
 
 
 ### `Lock.prototype.extend(ttl, ?callback) => Promise<Lock>`
-- `ttl (number)` time in ms to extend the lock's expiration
+- `ttl (number)` time from now in ms to set as the lock's new expiration
 - `callback (function)` callback returning:
 	- `err (Error)`
 	- `lock (Lock)`
