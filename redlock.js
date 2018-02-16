@@ -200,7 +200,11 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			//    - it may have been re-acquired by another process
 			//    - it may hava already been manually released
 			//    - it may have expired
-			if(typeof response === 'number' && (response === 0 || response === 1))
+
+			if(typeof response === 'string')
+				response = parseInt(response);
+
+			if(response === 0 || response === 1)
 				votes++;
 
 			if(waiting-- > 1) return;
