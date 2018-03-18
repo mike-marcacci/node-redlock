@@ -335,7 +335,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 				return lock.unlock(function(){
 
 					// RETRY
-					if(attempts <= self.retryCount)
+					if(self.retryCount === -1 || attempts <= self.retryCount)
 						return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
 
 					// FAILED
