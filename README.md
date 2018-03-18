@@ -34,6 +34,8 @@ Redlock cannot tell you *with certainty* if a resource is currently locked. For 
 
 That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable",
 
+With `retryCount=-1` there will be unlimited retries until the lock is aquired.
+
 
 Installation
 ------------
