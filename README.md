@@ -20,6 +20,9 @@ This is a node.js implementation of the [redlock](http://redis.io/topics/distloc
 
 
 ### Using Cluster/Sentinel
+
+***Please make sure to use a client with built-in cluster support, such as [ioredis](https://github.com/luin/ioredis).***
+
 It is completely possible to use a *single* redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
 
 Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
