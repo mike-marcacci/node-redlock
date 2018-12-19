@@ -112,7 +112,7 @@ Usage (promise style)
 // the string identifier for the resource you want to lock
 var resource = 'locks:account:322456';
 
-// the maximum amount of time you want the resource locked,
+// the maximum amount of time you want the resource locked in milliseconds,
 // keeping in mind that you can extend the lock up until
 // the point when it expires
 var ttl = 1000;
