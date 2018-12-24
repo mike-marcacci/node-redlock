@@ -50,7 +50,7 @@ Configuration
 -------------
 Redlock can use [node redis](https://github.com/mranney/node_redis), [ioredis](https://github.com/luin/ioredis) or any other compatible redis library to keep its client connections.
 
-A redlock object is instantiated with an array of at least one redis client and an optional `options` object. Properties of the Redlock object should NOT be changed after it is firstused, as doing so could have unintended consequences for live locks.
+A redlock object is instantiated with an array of at least one redis client and an optional `options` object. Properties of the Redlock object should NOT be changed after it is first used, as doing so could have unintended consequences for live locks.
 
 ```js
 var client1 = require('redis').createClient(6379, 'redis1.example.com');
