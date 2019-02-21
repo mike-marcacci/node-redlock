@@ -135,8 +135,11 @@ Redlock.prototype.quit = function quit(callback) {
 // )
 // ```
 Redlock.prototype.acquire =
-Redlock.prototype.lock = function lock(resource, ttl, callback) {
-	return this._lock(resource, null, ttl, callback);
+Redlock.prototype.lock = function lock(resource, ttl, valueOrCallback, callback) {
+	if (typeof callback === 'undefined')
+		return this._lock(resource, null, ttl, valueOrCallback);
+	
+	return this._lock(resource, valueOrCallback, ttl, callback);
 };
 
 // lock
