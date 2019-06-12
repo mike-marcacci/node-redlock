@@ -78,7 +78,7 @@ var redlock = new Redlock(
 		// the max time in ms randomly added to retries
 		// to improve performance under high contention
 		// see https://www.awsarchitectureblog.com/2015/03/backoff.html
-        retryJitter:  200 // time in ms
+		retryJitter:  200 // time in ms
 	}
 );
 ```
