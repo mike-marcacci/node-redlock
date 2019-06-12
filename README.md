@@ -10,6 +10,7 @@ This is a node.js implementation of the [redlock](http://redis.io/topics/distloc
 - [Usage (Promise Style)](#usage-promise-style)
 - [Usage (Disposer Style)](#usage-disposer-style)
 - [Usage (Callback Style)](#usage-callback-style)
+- [Locking multiple resources](#locking-multiple-resources)
 - [API Docs](#api-docs)
 
 ### High-Availability Recommendations
@@ -77,7 +78,7 @@ var redlock = new Redlock(
 		// the max time in ms randomly added to retries
 		// to improve performance under high contention
 		// see https://www.awsarchitectureblog.com/2015/03/backoff.html
-		retryJitter:  200 // time in ms
+        retryJitter:  200 // time in ms
 	}
 );
 ```
@@ -305,11 +306,47 @@ redlock.lock('locks:account:322456', 1000, function(err, lock) {
 
 ```
 
+## Locking multiple resources
+Multiple resources can be locked by providing an `Array` of strings to `Redlock.prototype.lock` call. Internally a single attempt is made to `redis` by evaluating script which executes lock statements. For more details about atomicity of scripts please see [redis reference](https://redis.io/commands/eval#atomicity-of-scripts).
+
+There are however some limitations of which you need to be aware of:
+- When requesting a lock it will fail if any of requested resources is already set
+- If lock attempt fails for any resource (due to whatever reason) an attempt for removing already set resources is made. However there are no guarantees that it will succeed (`redis` doesn't provide them)
+- Releasing lock will fail if any of requested resources is missing
+- Extending lock will fail if any of requested resources is missing
+
+Example:
+```js
+redlock.lock(['locks:account:322456', 'locks:account:322457', 'locks:account:322458'], 1000).then(function(lock) {
+
+	// ...do something here...
+
+	// if you need more time, you can continue to extend
+	// the lock as long as you never let it expire
+
+	// this will extend the lock so that it expires
+	// approximitely 1s from when `extend` is called
+	return lock.extend(1000).then(function(lock){
+
+		// ...do something here...
+
+		// unlock your resource when you are done
+		return lock.unlock()
+		.catch(function(err) {
+			// we weren't able to reach redis; your lock will eventually
+			// expire, but you probably want to log this error
+			console.error(err);
+		});
+	});
+});
+```
+
+
 API Docs
 --------
 
 ### `Redlock.prototype.lock(resource, ttl, ?callback) => Promise<Lock>`
-- `resource (string)` resource to be locked
+- `resource (string or string[])` resource(s) to be locked
 - `ttl (number)` time in ms until the lock expires
 - `callback (function)` callback returning:
 	- `err (Error)`
@@ -331,7 +368,7 @@ API Docs
 
 
 ### `Redlock.prototype.disposer(resource, ttl, ?unlockErrorHandler)`
-- `resource (string)` resource to be locked
+- `resource (string or string[])` resource(s) to be locked
 - `ttl (number)` time in ms to extend the lock's expiration
 - `callback (function)` error handler called with:
 	- `err (Error)`
