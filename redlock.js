@@ -190,57 +190,57 @@ Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
 // attempt to restore the lock on nodes that failed to release. It is safe to re-attempt an
 // unlock or to ignore the error, as the lock will automatically expire after its timeout.
 Redlock.prototype.release =
-	Redlock.prototype.unlock = function unlock(lock, callback) {
-		var self = this;
+Redlock.prototype.unlock = function unlock(lock, callback) {
+	var self = this;
 
-		// immediately invalidate the lock
-		lock.expiration = 0;
+	// immediately invalidate the lock
+	lock.expiration = 0;
 
-		return new Promise(function(resolve, reject) {
+	return new Promise(function(resolve, reject) {
 
-			// the number of servers which have agreed to release this lock
-			var votes = 0;
+		// the number of servers which have agreed to release this lock
+		var votes = 0;
 
-			// the number of votes needed for consensus
-			var quorum = Math.floor(self.servers.length / 2) + 1;
+		// the number of votes needed for consensus
+		var quorum = Math.floor(self.servers.length / 2) + 1;
 
-			// the number of async redis calls still waiting to finish
-			var waiting = self.servers.length;
+		// the number of async redis calls still waiting to finish
+		var waiting = self.servers.length;
 
-			// release the lock on each server
-			self.servers.forEach(function(server){
-				return self.isMultiResource(lock.resource) ? server.eval([multiValueUnlockScript, lock.resource.length].concat(lock.resource).concat([lock.value]), loop) : server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
-			});
+		// release the lock on each server
+		self.servers.forEach(function(server){
+			return self.isMultiResource(lock.resource) ? server.eval([multiValueUnlockScript, lock.resource.length].concat(lock.resource).concat([lock.value]), loop) : server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+		});
 
-			function loop(err, response) {
-				if(err) self.emit('clientError', err);
+		function loop(err, response) {
+			if(err) self.emit('clientError', err);
 
-				// - if the lock was released by this call, it will return 1
-				// - if the lock has already been released, it will return 0
-				//    - it may have been re-acquired by another process
-				//    - it may hava already been manually released
-				//    - it may have expired
+			// - if the lock was released by this call, it will return 1
+			// - if the lock has already been released, it will return 0
+			//    - it may have been re-acquired by another process
+			//    - it may hava already been manually released
+			//    - it may have expired
 
-				if(typeof response === 'string')
-					response = parseInt(response);
+			if(typeof response === 'string')
+				response = parseInt(response);
 
-				if(response === 0 || response === 1)
-					votes++;
+			if(response === 0 || response === 1)
+				votes++;
 
-				if(waiting-- > 1) return;
+			if(waiting-- > 1) return;
 
-				// SUCCESS: there is concensus and the lock is released
-				if(votes >= quorum)
-					return resolve();
+			// SUCCESS: there is concensus and the lock is released
+			if(votes >= quorum)
+				return resolve();
 
-				// FAILURE: the lock could not be released
-				return reject(new LockError('Unable to fully release the lock on resource "' + lock.resource + '".'));
-			}
-		})
+			// FAILURE: the lock could not be released
+			return reject(new LockError('Unable to fully release the lock on resource "' + lock.resource + '".'));
+		}
+	})
 
-			// optionally run callback
-			.nodeify(callback);
-	};
+		// optionally run callback
+		.nodeify(callback);
+};
 
 
 // extend
@@ -256,15 +256,15 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 	// extend the lock
 	return self._lock(lock.resource, lock.value, ttl)
 
-		// modify and return the original lock object
-		.then(function(extension){
-			lock.value      = extension.value;
-			lock.expiration = extension.expiration;
-			return lock;
-		})
+	// modify and return the original lock object
+	.then(function(extension){
+		lock.value      = extension.value;
+		lock.expiration = extension.expiration;
+		return lock;
+	})
 
-		// optionally run callback
-		.nodeify(callback);
+	// optionally run callback
+	.nodeify(callback);
 };
 
 
@@ -372,8 +372,8 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		return attempt();
 	})
 
-		// optionally run callback
-		.nodeify(callback);
+	// optionally run callback
+	.nodeify(callback);
 };
 
 
