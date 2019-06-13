@@ -17,8 +17,8 @@ function test(name, clients){
 		retryJitter: 50
 	});
 
-    var resource = 'Redlock:test:resource';
-    var multiValueResource = ['Redlock:test:mvResource1','Redlock:test:mvResource2'];
+	var resource = 'Redlock:test:resource';
+	var multiValueResource = ['Redlock:test:mvResource1','Redlock:test:mvResource2'];
 	var error    = 'Redlock:test:error';
 
 	describe('Redlock: ' + name, function(){
@@ -60,19 +60,19 @@ function test(name, clients){
 			var opts = {
 				lockScript: function(lockScript) { return lockScript + 'and 1'; },
 				unlockScript: function(unlockScript) { return unlockScript + 'and 2'; },
-                extendScript: function(extendScript) { return extendScript + 'and 3'; },
-                multiValueLockScript: function(multiValueLockScript) { return multiValueLockScript + 'and 4'; },
-                multiValueUnlockScript: function(multiValueUnlockScript) { return multiValueUnlockScript + 'and 5'; },
-                multiValueExtendScript: function(multiValueExtendScript) { return multiValueExtendScript + 'and 6'; }
+				extendScript: function(extendScript) { return extendScript + 'and 3'; },
+				multiValueLockScript: function(multiValueLockScript) { return multiValueLockScript + 'and 4'; },
+				multiValueUnlockScript: function(multiValueUnlockScript) { return multiValueUnlockScript + 'and 5'; },
+				multiValueExtendScript: function(multiValueExtendScript) { return multiValueExtendScript + 'and 6'; }
 			};
 			var customRedlock = new Redlock(clients, opts);
 			var i = 1;
 			assert.equal(customRedlock.lockScript, redlock.lockScript + 'and ' + i++);
 			assert.equal(customRedlock.unlockScript, redlock.unlockScript + 'and ' + i++);
-            assert.equal(customRedlock.extendScript, redlock.extendScript + 'and ' + i++);
-            assert.equal(customRedlock.multiValueLockScript, redlock.multiValueLockScript + 'and ' + i++);
-            assert.equal(customRedlock.multiValueUnlockScript, redlock.multiValueUnlockScript + 'and ' + i++);
-            assert.equal(customRedlock.multiValueExtendScript, redlock.multiValueExtendScript + 'and ' + i);
+			assert.equal(customRedlock.extendScript, redlock.extendScript + 'and ' + i++);
+			assert.equal(customRedlock.multiValueLockScript, redlock.multiValueLockScript + 'and ' + i++);
+			assert.equal(customRedlock.multiValueUnlockScript, redlock.multiValueUnlockScript + 'and ' + i++);
+			assert.equal(customRedlock.multiValueExtendScript, redlock.multiValueExtendScript + 'and ' + i);
 		});
 
 		describe('callbacks', function(){
@@ -100,11 +100,11 @@ function test(name, clients){
 			var two;
 			var two_expiration;
 			it('should wait until a lock expires before issuing another lock', function(done) {
-                assert(one, 'Could not run because a required previous test failed.');
+				assert(one, 'Could not run because a required previous test failed.');
 				redlock.lock(resource, 800, function(err, lock){
-                    if(err) throw err;
+					if(err) throw err;
 					assert.isObject(lock);
-                    assert.isAbove(lock.expiration, Date.now()-1);
+					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(Date.now()+1, one.expiration);
 					assert.isAbove(lock.attempts, 1);
 					two = lock;
@@ -449,16 +449,16 @@ function test(name, clients){
 					clients[i].del(resource, cb);
 				}
 			});
-        });
-        
-        describe('callbacksMultiValue', function(){
+		});
+		
+		describe('callbacksMultiValue', function(){
 			before(function(done) {
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
-                    for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+					for (var j = multiValueResource.length - 1; j >= 0; j--) {
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
 
@@ -478,13 +478,13 @@ function test(name, clients){
 			var two;
 			var two_expiration;
 			it('should wait until a lock expires before issuing another lock', function(done) {
-                assert(one, 'Could not run because a required previous test failed.');
+				assert(one, 'Could not run because a required previous test failed.');
 				redlock.lock(multiValueResource, 800, function(err, lock){
-                    if(err) throw err;
-                    assert.isObject(lock);
-                    assert.isAbove(lock.expiration, Date.now()-1);
-                    assert.isAbove(Date.now()+1, one.expiration);
-                    assert.isAbove(lock.attempts, 1);
+					if(err) throw err;
+					assert.isObject(lock);
+					assert.isAbove(lock.expiration, Date.now()-1);
+					assert.isAbove(Date.now()+1, one.expiration);
+					assert.isAbove(lock.attempts, 1);
 					two = lock;
 					two_expiration = lock.expiration;
 					done();
@@ -588,21 +588,21 @@ function test(name, clients){
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
-                    for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+					for (var j = multiValueResource.length - 1; j >= 0; j--) {
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
-        });
-        
-        describe('promisesMultiValue', function(){
+		});
+		
+		describe('promisesMultiValue', function(){
 			before(function(done) {
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
 
@@ -726,20 +726,20 @@ function test(name, clients){
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
-        });
-        
-        describe('disposerMultiValue', function(){
+		});
+		
+		describe('disposerMultiValue', function(){
 			before(function(done) {
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
 
@@ -798,7 +798,7 @@ function test(name, clients){
 			var three_original_expiration;
 			var three_extended_expiration;
 			it('should automatically release an extended lock', function(done) {
-                assert(two_expiration, 'Could not run because a required previous test failed.');
+				assert(two_expiration, 'Could not run because a required previous test failed.');
 				Promise.using(
 					redlock.disposer(multiValueResource, 200),
 					function(lock){
@@ -813,7 +813,7 @@ function test(name, clients){
 							assert.isObject(extended);
 							assert.isAbove(extended.expiration, Date.now()-1);
 							assert.isBelow(Date.now()-1, three_original_expiration);
-                            assert.isAbove(extended.expiration, three_original_expiration);
+							assert.isAbove(extended.expiration, three_original_expiration);
 							assert.equal(lock.attempts, 1);
 							assert.equal(extended, lock);
 							three_extended = extended;
@@ -832,11 +832,11 @@ function test(name, clients){
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					for (var j = multiValueResource.length - 1; j >= 0; j--) {
-                        clients[i].del(multiValueResource[j], cb);
-                    }
+						clients[i].del(multiValueResource[j], cb);
+					}
 				}
 			});
-        });
+		});
 
 		describe('quit', function() {
 			it('should quit all clients', function(done){
