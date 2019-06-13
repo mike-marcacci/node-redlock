@@ -26,11 +26,11 @@
   },
   "homepage": "https://github.com/mike-marcacci/node-redlock",
   "devDependencies": {
-    "chai": "^3.5.0",
-    "coveralls": "^2.11.8",
-    "ioredis": "^3.0.0",
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.4",
+    "ioredis": "^4.10.0",
     "istanbul": "^0.4.2",
-    "mocha": "^2.4.5",
+    "mocha": "^6.1.4",
     "redis": "^2.7.1"
   },
   "dependencies": {
