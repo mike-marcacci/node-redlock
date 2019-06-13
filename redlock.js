@@ -15,6 +15,24 @@ var lockScript = 'return redis.call("set", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]
 var unlockScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 var extendScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end';
 
+// simplified algorithm:
+// - check does any key already exists - if it does return nil (keeping compatibility with "set nx" and string_numbers option)
+// - set all keys
+// - if any key set fails delete keys which were set successfully and return nil
+// - if everything goes well return ok(1)
+var multiValueLockScript = 'local keyExists = 0; for i, key in ipairs(KEYS) do if redis.pcall("EXISTS", key) == 1 then keyExists=1 break end end if keyExists == 1 then return nil end; local addedKeys={}; local addFailed=0; for i, key in ipairs(KEYS) do if not redis.pcall("SET", key, ARGV[1], "NX", "PX", ARGV[2]) then addFailed=1; break end; table.insert(addedKeys, key); end if addFailed == 1 then for i, addedKey in ipairs(addedKeys) do redis.pcall("DEL", addedKey) end return nil end return 1';
+// simplified algorithm:
+// - check do all keys exist - if any of them is missing return error(0)
+// - delete all keys
+// - return ok(1)
+var multiValueUnlockScript = 'local keyMissing = 0; for i, key in ipairs(KEYS) do if redis.pcall("GET", key) ~= ARGV[1] then keyMissing=1 break end end if keyMissing == 1 then return 0 end; local deleteFailed=0; for i, key in ipairs(KEYS) do if not redis.pcall("DEL", key) then deleteFailed=1; end; end; if deleteFailed == 1 then return 0 end return 1';
+// simplified algorithm:
+// - check do all keys exist - if any of them is missing return error(0)
+// - extend all keys
+// - if extend fails for any key return error(0)
+// - if extend succeeds for all keys return ok(1)
+var multiValueExtendScript = 'local keyMissing = 0; for i, key in ipairs(KEYS) do if redis.pcall("EXISTS", key) == 0 then keyMissing = 1 break end end if keyMissing == 1 then return 0 end; local extendFailed = 0; for i, key in ipairs(KEYS) do if not redis.pcall("PEXPIRE", key, ARGV[2]) then extendFailed = 1; break end; end; if extendFailed == 1 then return 0 end return 1';
+
 // defaults
 var defaults = {
 	driftFactor: 0.01,
@@ -85,11 +103,13 @@ function Redlock(clients, options) {
 	this.driftFactor  = typeof options.driftFactor  === 'number' ? options.driftFactor : defaults.driftFactor;
 	this.retryCount   = typeof options.retryCount   === 'number' ? options.retryCount  : defaults.retryCount;
 	this.retryDelay   = typeof options.retryDelay   === 'number' ? options.retryDelay  : defaults.retryDelay;
-	this.retryJitter  = typeof options.retryJitter  === 'number' ? options.retryJitter  : defaults.retryJitter;
+	this.retryJitter  = typeof options.retryJitter  === 'number' ? options.retryJitter : defaults.retryJitter;
 	this.lockScript   = typeof options.lockScript   === 'function' ? options.lockScript(lockScript) : lockScript;
 	this.unlockScript = typeof options.unlockScript === 'function' ? options.unlockScript(unlockScript) : unlockScript;
 	this.extendScript = typeof options.extendScript === 'function' ? options.extendScript(extendScript) : extendScript;
-
+	this.multiValueLockScript   = typeof options.multiValueLockScript   === 'function' ? options.multiValueLockScript(multiValueLockScript)     : multiValueLockScript;
+	this.multiValueUnlockScript = typeof options.multiValueUnlockScript === 'function' ? options.multiValueUnlockScript(multiValueUnlockScript) : multiValueUnlockScript;
+	this.multiValueExtendScript = typeof options.multiValueExtendScript === 'function' ? options.multiValueExtendScript(multiValueExtendScript) : multiValueExtendScript;
 	// set the redis servers from additional arguments
 	this.servers = clients;
 	if(this.servers.length === 0)
@@ -171,8 +191,8 @@ Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
 // unlock or to ignore the error, as the lock will automatically expire after its timeout.
 Redlock.prototype.release =
 Redlock.prototype.unlock = function unlock(lock, callback) {
-	var self = this;
-
+    var self = this;
+    
 	// immediately invalidate the lock
 	lock.expiration = 0;
 
@@ -189,7 +209,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-			server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+            return self.isMultiResource(lock.resource) ? server.eval([multiValueUnlockScript, lock.resource.length].concat(lock.resource).concat([lock.value]), loop) : server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
 		});
 
 		function loop(err, response) {
@@ -199,8 +219,8 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			// - if the lock has already been released, it will return 0
 			//    - it may have been re-acquired by another process
 			//    - it may hava already been manually released
-			//    - it may have expired
-
+            //    - it may have expired
+            
 			if(typeof response === 'string')
 				response = parseInt(response);
 
@@ -290,14 +310,15 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.eval(self.lockScript, 1, resource, value, ttl, loop);
+				// alternative using spread operator [multiValueLockScript, resource.length, ...resource, value, ttl] but not supported in old js versions
+                return self.isMultiResource(resource) ? server.eval([multiValueLockScript, resource.length].concat(resource).concat([value, ttl]), loop) : server.eval(self.lockScript, 1, resource, value, ttl, loop);
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-				return server.eval(self.extendScript, 1, resource, value, ttl, loop);
+				return self.isMultiResource(resource) ? server.eval([multiValueExtendScript, resource.length].concat(resource).concat([value, ttl]), loop) : server.eval(self.extendScript, 1, resource, value, ttl, loop);
 			};
 		}
 
@@ -319,13 +340,13 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 			function loop(err, response) {
 				if(err) self.emit('clientError', err);
 				if(response) votes++;
-				if(waiting-- > 1) return;
-
+                if(waiting-- > 1) return;
+                
 				// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
 				// plus the configured allowable drift factor
 				var drift = Math.round(self.driftFactor * ttl) + 2;
-				var lock = new Lock(self, resource, value, start + ttl - drift, attempts);
-
+                var lock = new Lock(self, resource, value, start + ttl - drift, attempts);
+                
 				// SUCCESS: there is concensus and the lock is not expired
 				if(votes >= quorum && lock.expiration > Date.now())
 					return resolve(lock);
@@ -360,5 +381,8 @@ Redlock.prototype._random = function _random(){
 	return crypto.randomBytes(16).toString('hex');
 };
 
+Redlock.prototype.isMultiResource = function isMultiResource(resource) {
+	return Array.isArray(resource);
+};
 
 module.exports = Redlock;
