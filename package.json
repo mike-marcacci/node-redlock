@@ -36,6 +36,9 @@
   "dependencies": {
     "bluebird": "^3.3.3"
   },
+  "engines" : {
+    "node" : ">=8.0.0"
+  },
   "config": {
     "blanket": {
       "pattern": [
