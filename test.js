@@ -5,9 +5,9 @@ var Promise = require('bluebird');
 var Redlock = require('./redlock');
 
 test('single-server: https://www.npmjs.com/package/redis', [require('redis').createClient()]);
-// test('single-server: https://www.npmjs.com/package/redis (string_numbers=true)', [require('redis').createClient({string_numbers: true})]);
-// test('single-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
-// test('multi-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))({db: 1}), new (require('ioredis'))({db: 2}), new (require('ioredis'))({db: 3})]);
+test('single-server: https://www.npmjs.com/package/redis (string_numbers=true)', [require('redis').createClient({string_numbers: true})]);
+test('single-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
+test('multi-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))({db: 1}), new (require('ioredis'))({db: 2}), new (require('ioredis'))({db: 3})]);
 
 /* istanbul ignore next */
 function test(name, clients){

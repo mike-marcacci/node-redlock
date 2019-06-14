@@ -252,7 +252,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			//   - It may hava already been manually released;
 			//   - It may have expired;
 
-			if(response === resource.length)
+			if(response === resource.length || response === '' + resource.length)
 				votes++;
 
 			if(waiting-- > 1) return;
@@ -387,7 +387,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 
 			function loop(err, response) {
 				if(err) self.emit('clientError', err);
-				if(response === resource.length) votes++;
+				if(response === resource.length || response === '' + resource.length) votes++;
 				if(waiting-- > 1) return;
 				
 				// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
