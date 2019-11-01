@@ -20,7 +20,7 @@ const lockScript = `
 	end
 
 	-- Return the number of entries added.
-	return table.getn(KEYS)
+	return #KEYS
 `;
 
 const unlockScript = `
@@ -51,7 +51,7 @@ const extendScript = `
 	end
 
 	-- Return the number of entries updated.
-	return table.getn(KEYS)
+	return #KEYS
 `;
 
 // defaults
