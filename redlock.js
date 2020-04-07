@@ -90,12 +90,12 @@ util.inherits(LockError, Error);
 // convenience methods `unlock` and `extend` which perform the associated Redlock method on
 // itself.
 function Lock(redlock, resource, value, expiration, attempts, attemptsRemaining) {
-	this.redlock    = redlock;
-	this.resource   = resource;
-	this.value      = value;
-	this.expiration = expiration;
-	this.attempts   = attempts;
-	this.attemptsRemaining   = attemptsRemaining;
+	this.redlock           = redlock;
+	this.resource          = resource;
+	this.value             = value;
+	this.expiration        = expiration;
+	this.attempts          = attempts;
+	this.attemptsRemaining = attemptsRemaining;
 }
 
 Lock.prototype.unlock = function unlock(callback) {
@@ -193,7 +193,7 @@ Redlock.prototype.lock = function lock(resource, ttl, callback) {
 // ```
 Redlock.prototype.acquireWithOptions =
 Redlock.prototype.lockWithOptions = function lock(resource, ttl, options, callback) {
-	return this._lock(resource, null, ttl, {}, callback);
+	return this._lock(resource, null, ttl, options, callback);
 };
 
 // lock
@@ -349,6 +349,12 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback) {
 	const self = this;
 
+	// backwards compatibility with previous method signature: _lock(resource, value, ttl, callback)
+	if (typeof options === 'function' && typeof callback === 'undefined') {
+		callback = options;
+		options = {};
+	}
+
 	// array of locked resources
 	resource = Array.isArray(resource) ? resource : [resource];
 
@@ -394,8 +400,8 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback
 		function attempt(){
 			attempts++;
 
-			let retryCount = (options.retryCount || self.retryCount);
-			let retryDelay = (options.retryDelay || self.retryDelay);
+			let retryCount = options.retryCount || self.retryCount;
+			let retryDelay = options.retryDelay || self.retryDelay;
 
 			// the time when this attempt started
 			const start = Date.now();
