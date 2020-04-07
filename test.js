@@ -199,7 +199,19 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.equal(lock.attempts, 1);
-					done();
+					lock.unlock(done);
+				});
+			});
+
+			it('should lock a resource with additional options', function(done) {
+				redlock.lockWithOptions(resourceString, 200, {retryCount:2,retryDelay:1}, function(err, lock){
+					if(err) throw err;
+					assert.isObject(lock);
+					assert.instanceOf(lock, Redlock.Lock);
+					assert.isAbove(lock.expiration, Date.now()-1);
+					assert.equal(lock.attempts, 1);
+					assert.equal(lock.attemptsRemaining, 1);
+					lock.unlock(done);
 				});
 			});
 
