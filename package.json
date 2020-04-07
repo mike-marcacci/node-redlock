@@ -34,7 +34,7 @@
     "redis": "^3.0.2"
   },
   "dependencies": {
-    "bluebird": "^3.7.2"
+    "p-map": "^4.0.0"
   },
   "engines": {
     "node": ">=8.0.0"

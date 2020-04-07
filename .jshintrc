@@ -1,5 +1,6 @@
 {
 	"node": true,
+	"esversion": 7,
 	"unused": "vars",
 	"multistr": true,
 	"globals": {

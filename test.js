@@ -1,7 +1,6 @@
 'use strict';
 
 var assert = require('chai').assert;
-var Promise = require('bluebird');
 var Redlock = require('./redlock');
 
 test('single-server: https://www.npmjs.com/package/redis', [require('redis').createClient()]);
@@ -257,7 +256,7 @@ function test(name, clients){
 			var one;
 			it('should lock a resource', function(done) {
 				redlock.lock(resourceString, 200)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.equal(lock.attempts, 1);
@@ -271,7 +270,7 @@ function test(name, clients){
 			it('should wait until a lock expires before issuing another lock', function(done) {
 				assert(one, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceString, 800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(Date.now()+1, one.expiration);
@@ -284,12 +283,12 @@ function test(name, clients){
 
 			it('should unlock a resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock().done(done, done);
+				two.unlock().then(done).catch(done);
 			});
 
 			it('should unlock an already-unlocked resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock().done(function(result) {
+				two.unlock().then(function(result) {
 					done(new Error('Expected an error.'));
 				}, function(err) {
 					done();
@@ -300,7 +299,7 @@ function test(name, clients){
 				assert(two, 'Could not run because a required previous test failed.');
 				var failingTwo = Object.create(two);
 				failingTwo.resource = error;
-				failingTwo.unlock().done(done, function(err) {
+				failingTwo.unlock().then(done, function(err) {
 					assert.isNotNull(err);
 					done();
 				});
@@ -309,7 +308,7 @@ function test(name, clients){
 			it('should fail to extend a lock on an already-unlocked resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.extend(200)
-				.done(function(){
+				.then(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
@@ -322,7 +321,7 @@ function test(name, clients){
 			it('should issue another lock immediately after a resource is unlocked', function(done) {
 				assert(two_expiration, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceString, 800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isBelow(Date.now()-1, two_expiration);
@@ -336,7 +335,7 @@ function test(name, clients){
 			it('should extend an unexpired lock', function(done) {
 				assert(three, 'Could not run because a required previous test failed.');
 				three.extend(800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
@@ -350,7 +349,7 @@ function test(name, clients){
 			it('should fail after the maximum retry count is exceeded', function(done) {
 				assert(four, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceString, 200)
-				.done(function(){
+				.then(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
@@ -363,7 +362,7 @@ function test(name, clients){
 				assert(four, 'Could not run because a required previous test failed.');
 				setTimeout(function(){
 					three.extend(800)
-					.done(function(){
+					.then(function(){
 						done(new Error('Should have failed with a LockError'));
 					}, function(err){
 						assert.instanceOf(err, Redlock.LockError);
@@ -382,109 +381,6 @@ function test(name, clients){
 			});
 		});
 
-		describe('disposer', function(){
-			before(function(done) {
-				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
-				for (var i = clients.length - 1; i >= 0; i--) {
-					clients[i].del(resourceString, cb);
-				}
-			});
-
-			var one;
-			var one_expiration;
-			it('should automatically release a lock after the using block', function(done) {
-				Promise.using(
-					redlock.disposer(resourceString, 200),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.equal(lock.attempts, 1);
-						one = lock;
-						one_expiration = lock.expiration;
-					}
-				).done(done, done);
-			});
-
-			var two;
-			var two_expiration;
-			it('should issue another lock immediately after a resource is unlocked', function(done) {
-				assert(one_expiration, 'Could not run because a required previous test failed.');
-				Promise.using(
-					redlock.disposer(resourceString, 800),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.isBelow(Date.now()-1, one_expiration);
-						assert.equal(lock.attempts, 1);
-						two = lock;
-						two_expiration = lock.expiration;
-					}
-				).done(done, done);
-			});
-
-			it('should call unlockErrorHandler when unable to fully release a resource', function(done) {
-				assert(two, 'Could not run because a required previous test failed.');
-				var errs = 0;
-				var lock;
-				Promise.using(
-					redlock.disposer(resourceString, 800, function(err) {
-						errs++;
-					}),
-					function(l){
-						lock = l;
-						lock.resource = error;
-					}
-				).done(function() {
-					assert.equal(errs, 1);
-					lock.resource = resourceString;
-					lock.unlock().done(done, done);
-				}, done);
-			});
-
-			var three_original, three_extended;
-			var three_original_expiration;
-			var three_extended_expiration;
-			it('should automatically release an extended lock', function(done) {
-				assert(two_expiration, 'Could not run because a required previous test failed.');
-				Promise.using(
-					redlock.disposer(resourceString, 200),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.isBelow(Date.now()-1, two_expiration);
-						three_original = lock;
-						three_original_expiration = lock.expiration;
-
-						return Promise.delay(100)
-						.then(function(){ return lock.extend(200); })
-						.then(function(extended) {
-							assert.isObject(extended);
-							assert.isAbove(extended.expiration, Date.now()-1);
-							assert.isBelow(Date.now()-1, three_original_expiration);
-							assert.isAbove(extended.expiration, three_original_expiration);
-							assert.equal(lock.attempts, 1);
-							assert.equal(extended, lock);
-							three_extended = extended;
-							three_extended_expiration = extended.expiration;
-						});
-					}
-				)
-				.then(function(){
-					assert.equal(three_original.expiration, 0);
-					assert.equal(three_extended.expiration, 0);
-				}).done(done, done);
-			});
-
-			after(function(done) {
-				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
-				for (var i = clients.length - 1; i >= 0; i--) {
-					clients[i].del(resourceString, cb);
-				}
-			});
-		});
-		
 		describe('callbacks - multi', function(){
 			before(function(done) {
 				var err;
@@ -631,7 +527,7 @@ function test(name, clients){
 				}
 			});
 		});
-		
+
 		describe('promises - multi', function(){
 			before(function(done) {
 				var err;
@@ -646,7 +542,7 @@ function test(name, clients){
 			var one;
 			it('should lock a multivalue resource', function(done) {
 				redlock.lock(resourceArray, 200)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.equal(lock.attempts, 1);
@@ -660,7 +556,7 @@ function test(name, clients){
 			it('should wait until a multivalue lock expires before issuing another lock', function(done) {
 				assert(one, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceArray, 800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(Date.now()+1, one.expiration);
@@ -673,12 +569,12 @@ function test(name, clients){
 
 			it('should unlock a multivalue resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock().done(done, done);
+				two.unlock().then(done, done);
 			});
 
 			it('should unlock an already-unlocked multivalue resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock().done(function(result) {
+				two.unlock().then(function(result) {
 					done(new Error('Expected an error.'));
 				}, function(err) {
 					done();
@@ -689,7 +585,7 @@ function test(name, clients){
 				assert(two, 'Could not run because a required previous test failed.');
 				var failingTwo = Object.create(two);
 				failingTwo.resource = error;
-				failingTwo.unlock().done(done, function(err) {
+				failingTwo.unlock().then(done, function(err) {
 					assert.isNotNull(err);
 					done();
 				});
@@ -698,7 +594,7 @@ function test(name, clients){
 			it('should fail to extend a lock on an already-unlocked multivalue resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.extend(200)
-				.done(function(){
+				.then(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
@@ -711,7 +607,7 @@ function test(name, clients){
 			it('should issue another lock immediately after a multivalue resource is unlocked', function(done) {
 				assert(two_expiration, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceArray, 800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isBelow(Date.now()-1, two_expiration);
@@ -725,7 +621,7 @@ function test(name, clients){
 			it('should extend an unexpired lock', function(done) {
 				assert(three, 'Could not run because a required previous test failed.');
 				three.extend(800)
-				.done(function(lock){
+				.then(function(lock){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.isAbove(lock.expiration, three.expiration-1);
@@ -739,7 +635,7 @@ function test(name, clients){
 			it('should fail after the maximum retry count is exceeded', function(done) {
 				assert(four, 'Could not run because a required previous test failed.');
 				redlock.lock(resourceArray, 200)
-				.done(function(){
+				.then(function(){
 					done(new Error('Should have failed with a LockError'));
 				}, function(err){
 					assert.instanceOf(err, Redlock.LockError);
@@ -752,7 +648,7 @@ function test(name, clients){
 				assert(four, 'Could not run because a required previous test failed.');
 				setTimeout(function(){
 					three.extend(800)
-					.done(function(){
+					.then(function(){
 						done(new Error('Should have failed with a LockError'));
 					}, function(err){
 						assert.instanceOf(err, Redlock.LockError);
@@ -772,117 +668,11 @@ function test(name, clients){
 				}
 			});
 		});
-		
-		describe('disposer - multi', function(){
-			before(function(done) {
-				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
-				for (var i = clients.length - 1; i >= 0; i--) {
-					for (var j = resourceArray.length - 1; j >= 0; j--) {
-						clients[i].del(resourceArray[j], cb);
-					}
-				}
-			});
-
-			var one;
-			var one_expiration;
-			it('should automatically release a lock after the using block', function(done) {
-				Promise.using(
-					redlock.disposer(resourceArray, 200),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.equal(lock.attempts, 1);
-						one = lock;
-						one_expiration = lock.expiration;
-					}
-				).done(done, done);
-			});
-
-			var two;
-			var two_expiration;
-			it('should issue another lock immediately after a resource is unlocked', function(done) {
-				assert(one_expiration, 'Could not run because a required previous test failed.');
-				Promise.using(
-					redlock.disposer(resourceArray, 800),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.isBelow(Date.now()-1, one_expiration);
-						assert.equal(lock.attempts, 1);
-						two = lock;
-						two_expiration = lock.expiration;
-					}
-				).done(done, done);
-			});
-
-			it('should call unlockErrorHandler when unable to fully release a resource', function(done) {
-				assert(two, 'Could not run because a required previous test failed.');
-				var errs = 0;
-				var lock;
-				Promise.using(
-					redlock.disposer(resourceArray, 800, function(err) {
-						errs++;
-					}),
-					function(l){
-						lock = l;
-						lock.resource = error;
-					}
-				).done(function() {
-					assert.equal(errs, 1);
-					lock.resource = resourceArray;
-					lock.unlock().done(done, done);
-				}, done);
-			});
-
-			var three_original, three_extended;
-			var three_original_expiration;
-			var three_extended_expiration;
-			it('should automatically release an extended lock', function(done) {
-				assert(two_expiration, 'Could not run because a required previous test failed.');
-				Promise.using(
-					redlock.disposer(resourceArray, 200),
-					function(lock){
-						assert.isObject(lock);
-						assert.isAbove(lock.expiration, Date.now()-1);
-						assert.isBelow(Date.now()-1, two_expiration);
-						three_original = lock;
-						three_original_expiration = lock.expiration;
-						return Promise.delay(100)
-						.then(function(){ return lock.extend(200); })
-						.then(function(extended) {
-							assert.isObject(extended);
-							assert.isAbove(extended.expiration, Date.now()-1);
-							assert.isBelow(Date.now()-1, three_original_expiration);
-							assert.isAbove(extended.expiration, three_original_expiration);
-							assert.equal(lock.attempts, 1);
-							assert.equal(extended, lock);
-							three_extended = extended;
-							three_extended_expiration = extended.expiration;
-						});
-					}
-				)
-				.then(function(){
-					assert.equal(three_original.expiration, 0);
-					assert.equal(three_extended.expiration, 0);
-				}).done(done, done);
-			});
-
-			after(function(done) {
-				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
-				for (var i = clients.length - 1; i >= 0; i--) {
-					for (var j = resourceArray.length - 1; j >= 0; j--) {
-						clients[i].del(resourceArray[j], cb);
-					}
-				}
-			});
-		});
 
 		describe('quit', function() {
 			it('should quit all clients', function(done){
 				redlock.quit()
-				.done(function(results) {
+				.then(function(results) {
 					assert.isArray(results);
 					done();
 				}, done);

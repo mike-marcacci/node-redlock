@@ -2,7 +2,7 @@
 
 const util = require('util');
 const crypto = require('crypto');
-const Promise = require('bluebird');
+const pMap = require('p-map');
 const EventEmitter = require('events');
 
 // constants
@@ -63,6 +63,14 @@ const defaults = {
 };
 
 
+// MONKEYPATCH
+Promise.prototype.nodeify = function (callback) {
+	if (typeof callback === 'function') {
+		this.then((v) => callback(undefined, v))
+			.catch((err) => callback(err));
+	}
+	return this;
+};
 
 
 
@@ -153,7 +161,7 @@ Redlock.LockError = LockError;
 Redlock.prototype.quit = function quit(callback) {
 
 	// quit all clients
-	return Promise.map(this.servers, function(client) {
+	return pMap(this.servers, function(client) {
 		return client.quit();
 	})
 
@@ -198,29 +206,6 @@ Redlock.prototype.lockWithOptions = function lock(resource, ttl, options, callba
 	return this._lock(resource, null, ttl, options, callback);
 };
 
-// lock
-// ----
-// This method locks a resource using the redlock algorithm,
-// and returns a bluebird disposer.
-//
-// ```js
-// using(
-//   redlock.disposer(
-//     'some-resource',       // the resource to lock
-//     2000                   // ttl in ms
-//   ),
-//   function(lock) {
-//     ...
-//   }
-// );
-// ```
-Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
-	errorHandler = errorHandler || function(err) {};
-	return this._lock(resource, null, ttl, {}).disposer(function(lock){
-		return lock.unlock().catch(errorHandler);
-	});
-};
-
 
 // unlock
 // ------
@@ -236,7 +221,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 	const resource = Array.isArray(lock.resource)
 		? lock.resource
 		: [lock.resource];
-	
+
 	// immediately invalidate the lock
 	lock.expiration = 0;
 
@@ -409,12 +394,12 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback
 				if(err) self.emit('clientError', err);
 				if(response === resource.length || response === '' + resource.length) votes++;
 				if(waiting-- > 1) return;
-				
+
 				// Add 2 milliseconds to the drift to account for Redis expires precision, which is 1 ms,
 				// plus the configured allowable drift factor
 				const drift = Math.round(self.driftFactor * ttl) + 2;
 				const lock = new Lock(self, resource, value, start + ttl - drift, attempts, retryCount - attempts);
-				
+
 				// SUCCESS: there is concensus and the lock is not expired
 				if(votes >= quorum && lock.expiration > Date.now())
 					return resolve(lock);
