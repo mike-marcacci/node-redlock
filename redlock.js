@@ -2,7 +2,6 @@
 
 const util = require('util');
 const crypto = require('crypto');
-const pMap = require('p-map');
 const EventEmitter = require('events');
 
 // constants
@@ -161,9 +160,9 @@ Redlock.LockError = LockError;
 Redlock.prototype.quit = function quit(callback) {
 
 	// quit all clients
-	return pMap(this.servers, function(client) {
+	return Promise.all(this.servers.map(function(client) {
 		return client.quit();
-	})
+	}))
 
 	// optionally run callback
 	.nodeify(callback);
