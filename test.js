@@ -114,11 +114,7 @@ function test(name, clients){
 			});
 
 			it('should unlock an already-unlocked resource', function(done) {
-				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock(function(err) {
-					assert.isNotNull(err)
-					done();
-				});
+				two.unlock(done);
 			});
 
 			it('should error when unable to fully release a resource', function(done) {
@@ -255,12 +251,9 @@ function test(name, clients){
 			});
 
 			it('should unlock an already-unlocked resource', function(done) {
-				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock().done(function(result) {
-					done(new Error('Expected an error.'));
-				}, function(err) {
 					done();
-				});
+				}, done);
 			});
 
 			it('should error when unable to fully release a resource', function(done) {
@@ -499,11 +492,7 @@ function test(name, clients){
 			});
 
 			it('should unlock an already-unlocked multivalue resource', function(done) {
-				assert(two, 'Could not run because a required previous test failed.');
-				two.unlock(function(err) {
-					assert.isNotNull(err)
-					done();
-				});
+				two.unlock(done);
 			});
 
 			it('should error when unable to fully release a multivalue resource', function(done) {
@@ -646,10 +635,8 @@ function test(name, clients){
 			it('should unlock an already-unlocked multivalue resource', function(done) {
 				assert(two, 'Could not run because a required previous test failed.');
 				two.unlock().done(function(result) {
-					done(new Error('Expected an error.'));
-				}, function(err) {
 					done();
-				});
+				}, done);
 			});
 
 			it('should error when unable to fully release a multivalue resource', function(done) {

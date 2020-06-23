@@ -252,7 +252,7 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			//   - It may hava already been manually released;
 			//   - It may have expired;
 
-			if(response === resource.length || response === '' + resource.length)
+			if(response === 0 || response === '0' || response === resource.length || response === '' + resource.length)
 				votes++;
 
 			if(waiting-- > 1) return;
