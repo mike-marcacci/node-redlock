@@ -31,6 +31,14 @@ function test(name, clients){
 			}
 		});
 
+    before(function(done) {
+			var err;
+			var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+			for (var i = clients.length - 1; i >= 0; i--) {
+				clients[i].script('flush', cb);
+			}
+    })
+
 		it('should throw an error if not passed any clients', function(){
 			assert.throws(function(){
 				new Redlock([], {
