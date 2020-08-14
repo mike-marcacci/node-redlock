@@ -66,7 +66,7 @@ var redlock = new Redlock(
 	{
 		// the expected clock drift; for more details
 		// see http://redis.io/topics/distlock
-		driftFactor: 0.01, // time in ms
+		driftFactor: 0.01, // multiplied by lock ttl to determine drift time
 
 		// the max number of times Redlock will attempt
 		// to lock a resource before erroring
