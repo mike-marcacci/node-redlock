@@ -26,11 +26,11 @@ const lockScript = `
 const unlockScript = `
 	local count = 0
 	for i, key in ipairs(KEYS) do
-	  -- Only remove entries for *this* lock value.
-	  if redis.call("get", key) == ARGV[1] then
-	    redis.pcall("del", key)
-	    count = count + 1
-	  end
+		-- Only remove entries for *this* lock value.
+		if redis.call("get", key) == ARGV[1] then
+			redis.pcall("del", key)
+			count = count + 1
+		end
 	end
 
 	-- Return the number of entries removed.
@@ -40,14 +40,14 @@ const unlockScript = `
 const extendScript = `
 	-- Return 0 if an entry exists with a *different* lock value.
 	for i, key in ipairs(KEYS) do
-	  if redis.call("get", key) ~= ARGV[1] then
-	    return 0
-	  end
+		if redis.call("get", key) ~= ARGV[1] then
+			return 0
+		end
 	end
 
 	-- Update the entry for each provided key.
 	for i, key in ipairs(KEYS) do
-	  redis.call("set", key, ARGV[1], "PX", ARGV[2])
+		redis.call("set", key, ARGV[1], "PX", ARGV[2])
 	end
 
 	-- Return the number of entries updated.
@@ -131,11 +131,11 @@ function Redlock(clients, options) {
 	if(this.servers.length === 0)
 		throw new Error('Redlock must be instantiated with at least one redis server.');
 
-  this.scripts = {
-    lockScript: { value: this.lockScript, hash: this._hashScript(this.lockScript) },
-    unlockScript: { value: this.unlockScript, hash: this._hashScript(this.unlockScript) },
-    extendScript: { value: this.extendScript, hash: this._hashScript(this.extendScript) },
-  };
+	this.scripts = {
+		lockScript: { value: this.lockScript, hash: this._hashScript(this.lockScript) },
+		unlockScript: { value: this.unlockScript, hash: this._hashScript(this.unlockScript) },
+		extendScript: { value: this.extendScript, hash: this._hashScript(this.extendScript) },
+	};
 }
 
 // Inherit all the EventEmitter methods, like `on`, and `off`
@@ -253,11 +253,11 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-      return self._executeScript(server, 'unlockScript', [
+			return self._executeScript(server, 'unlockScript', [
 					resource.length,
 					...resource,
 					lock.value
-      ], loop);
+			], loop);
 		});
 
 		function loop(err, response) {
@@ -366,24 +366,24 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-        return self._executeScript(server, 'lockScript', [
+				return self._executeScript(server, 'lockScript', [
 						resource.length,
 						...resource,
 						value,
 						ttl
-        ], loop);
+				], loop);
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-        return self._executeScript(server, 'extendScript', [
+				return self._executeScript(server, 'extendScript', [
 						resource.length,
 						...resource,
 						value,
 						ttl
-        ], loop);
+				], loop);
 			};
 		}
 
@@ -450,21 +450,21 @@ Redlock.prototype._random = function _random(){
 };
 
 Redlock.prototype._executeScript = function(server, name, args, callback) {
-  const script = this.scripts[name];
+	const script = this.scripts[name];
 
-  return server.evalsha(script.hash, args, (err, result) => {
-    if(err !== null && err.message.startsWith("NOSCRIPT")) {
-      // Script is not loaded yet, call eval and it will populate it in redis lua scripts cache
-      args.unshift(script.value);
-      return server.eval(args, callback);
-    }
+	return server.evalsha(script.hash, args, (err, result) => {
+		if(err !== null && err.message.startsWith("NOSCRIPT")) {
+			// Script is not loaded yet, call eval and it will populate it in redis lua scripts cache
+			args.unshift(script.value);
+			return server.eval(args, callback);
+		}
 
-    return callback(err, result);
-  });
+		return callback(err, result);
+	});
 }
 
 Redlock.prototype._hashScript = function(value) {
-  return crypto.createHash('sha1').update(value).digest('hex');
+	return crypto.createHash('sha1').update(value).digest('hex');
 }
 
 module.exports = Redlock;
