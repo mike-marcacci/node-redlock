@@ -111,9 +111,6 @@ Lock.prototype.extend = function extend(ttl, callback) {
 Redlock.Lock = Lock;
 
 
-
-
-
 // Redlock
 // -------
 // A redlock object is instantiated with an array of at least one redis client and an optional
@@ -133,6 +130,12 @@ function Redlock(clients, options) {
 	this.servers = clients;
 	if(this.servers.length === 0)
 		throw new Error('Redlock must be instantiated with at least one redis server.');
+
+  this.scripts = {
+    lockScript: { value: this.lockScript, hash: this._hashScript(this.lockScript) },
+    unlockScript: { value: this.unlockScript, hash: this._hashScript(this.unlockScript) },
+    extendScript: { value: this.extendScript, hash: this._hashScript(this.extendScript) },
+  };
 }
 
 // Inherit all the EventEmitter methods, like `on`, and `off`
@@ -142,7 +145,6 @@ util.inherits(Redlock, EventEmitter);
 // Attach a reference to LockError per issue #7, which allows the application to use instanceof
 // to destinguish between error types.
 Redlock.LockError = LockError;
-
 
 // quit
 // ----
@@ -251,15 +253,11 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-			return server.eval(
-				[
-					self.unlockScript,
+      return self._executeScript(server, 'unlockScript', [
 					resource.length,
 					...resource,
 					lock.value
-				],
-				loop
-			)
+      ], loop);
 		});
 
 		function loop(err, response) {
@@ -368,32 +366,24 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.eval(
-					[
-						self.lockScript,
+        return self._executeScript(server, 'lockScript', [
 						resource.length,
 						...resource,
 						value,
 						ttl
-					],
-					loop
-				);
+        ], loop);
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-				return server.eval(
-					[
-						self.extendScript,
+        return self._executeScript(server, 'extendScript', [
 						resource.length,
 						...resource,
 						value,
 						ttl
-					],
-					loop
-				);
+        ], loop);
 			};
 		}
 
@@ -458,5 +448,23 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, options, callback
 Redlock.prototype._random = function _random(){
 	return crypto.randomBytes(16).toString('hex');
 };
+
+Redlock.prototype._executeScript = function(server, name, args, callback) {
+  const script = this.scripts[name];
+
+  return server.evalsha(script.hash, args, (err, result) => {
+    if(err !== null && err.message.startsWith("NOSCRIPT")) {
+      // Script is not loaded yet, call eval and it will populate it in redis lua scripts cache
+      args.unshift(script.value);
+      return server.eval(args, callback);
+    }
+
+    return callback(err, result);
+  });
+}
+
+Redlock.prototype._hashScript = function(value) {
+  return crypto.createHash('sha1').update(value).digest('hex');
+}
 
 module.exports = Redlock;
