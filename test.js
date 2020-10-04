@@ -199,7 +199,32 @@ function test(name, clients){
 					assert.isObject(lock);
 					assert.isAbove(lock.expiration, Date.now()-1);
 					assert.equal(lock.attempts, 1);
-					done();
+					lock.unlock(done);
+				});
+			});
+
+			describe('lockWithOptions', function() {
+				it('should lock a resource with additional options', function(done) {
+					redlock.lockWithOptions(resourceString, 200, {retryCount:10,retryDelay:1}, function(err, lock){
+						if(err) throw err;
+						assert.isObject(lock);
+						assert.instanceOf(lock, Redlock.Lock);
+						assert.isAbove(lock.expiration, Date.now()-1);
+						assert.equal(lock.attempts, 1);
+						assert.equal(lock.attemptsRemaining, 9);
+						lock.unlock(done);
+					});
+				});
+				it('should be backwards compatible', function(done) {
+					redlock._lock(resourceString, null, 200, function(err, lock){
+						if(err) throw err;
+						assert.isObject(lock);
+						assert.instanceOf(lock, Redlock.Lock);
+						assert.isAbove(lock.expiration, Date.now()-1);
+						assert.equal(lock.attempts, 1);
+						assert.equal(lock.attemptsRemaining, 1);
+						lock.unlock(done);
+					});
 				});
 			});
 
