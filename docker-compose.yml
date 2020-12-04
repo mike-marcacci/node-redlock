@@ -4,12 +4,39 @@ volumes:
   node_modules:
 
 services:
+  redis_single_instance:
+    image: redis
 
-  # This container builds the server.
+  # redis_single_cluster_1:
+  #   image: redis
+
+  # redis_single_cluster_2:
+  #   image: redis
+
+  # redis_multi_instance_a:
+  #   image: redis
+  # redis_multi_instance_b:
+  #   image: redis
+  # redis_multi_instance_c:
+  #   image: redis
+
+  # redis_multi_cluster_a_1:
+  #   image: redis
+  # redis_multi_cluster_a_2:
+  #   image: redis
+
+  # redis_multi_cluster_b_1:
+  #   image: redis
+  # redis_multi_cluster_b_2:
+  #   image: redis
+
+  # redis_multi_cluster_c_1:
+  #   image: redis
+  # redis_multi_cluster_c_2:
+  #   image: redis
+
   redlock:
-    build:
-      context: .
-      target: build
+    image: node:14
     command: yarn build:development
     environment:
       NODE_ENV: development

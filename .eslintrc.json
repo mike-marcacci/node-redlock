@@ -1,0 +1,22 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+    "prettier/@typescript-eslint"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": [0],
+    "@typescript-eslint/no-use-before-define": [0],
+    "@typescript-eslint/no-inferrable-types": [0],
+    "@typescript-eslint/array-type": [0],
+    "@typescript-eslint/explicit-function-return-type": [
+      1,
+      {
+        "allowExpressions": true,
+        "allowTypedFunctionExpressions": true
+      }
+    ]
+  },
+  "plugins": ["@typescript-eslint", "prettier"]
+}
