@@ -2,7 +2,7 @@ import { randomBytes, createHash } from "crypto";
 import { EventEmitter } from "events";
 import { AbortController, AbortSignal } from "abort-controller";
 
-import { Redis as IORedisClient } from "ioredis";
+import type { Redis as IORedisClient } from "ioredis";
 type Client = IORedisClient;
 
 // Define script constants.
