@@ -1,17 +1,13 @@
 {
   "parser": "@typescript-eslint/parser",
-  "extends": [
-    "plugin:@typescript-eslint/recommended",
-    "prettier",
-    "prettier/@typescript-eslint"
-  ],
+  "extends": ["plugin:@typescript-eslint/recommended", "prettier"],
   "rules": {
-    "@typescript-eslint/no-explicit-any": [0],
-    "@typescript-eslint/no-use-before-define": [0],
-    "@typescript-eslint/no-inferrable-types": [0],
-    "@typescript-eslint/array-type": [0],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-use-before-define": "off",
+    "@typescript-eslint/no-inferrable-types": "off",
+    "@typescript-eslint/array-type": "off",
     "@typescript-eslint/explicit-function-return-type": [
-      1,
+      "warn",
       {
         "allowExpressions": true,
         "allowTypedFunctionExpressions": true
