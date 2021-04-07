@@ -7,7 +7,7 @@ interface Compose {
 }
 
 export type RedisName = string;
-export type RedisUri = string;
+export type RedisUri = { host: string; port: number };
 
 function loadMappingFromCompose(path: string) {
   const compose = yaml.load(
@@ -21,7 +21,7 @@ function loadMappingFromCompose(path: string) {
     const portInfo = conf.ports[0];
     expect(portInfo).toContain(":");
     const [port] = portInfo.split(":");
-    mapping[name] = { host: "localhost", port };
+    mapping[name] = { host: "localhost", port: parseInt(port, 10) };
   }
 
   return mapping;
