@@ -411,25 +411,27 @@ export default class Redlock extends EventEmitter {
         return { attempts };
       }
 
-      // Wait before reattempting.
-      if (attempts.length < maxAttempts) {
-        await new Promise((resolve) => {
-          setTimeout(
-            resolve,
-            Math.max(
-              0,
-              settings.retryDelay +
-                Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
-            )
-          );
-        });
+      if (attempts.length >= maxAttempts) {
+        break;
       }
 
-      throw new ExecutionError(
-        "The operation was unable to acheive a quorum during its retry window.",
-        attempts
-      );
+      // Wait before reattempting.
+      await new Promise((resolve) => {
+        setTimeout(
+          resolve,
+          Math.max(
+            0,
+            settings.retryDelay +
+              Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
+          )
+        );
+      });
     }
+
+    throw new ExecutionError(
+      "The operation was unable to acheive a quorum during its retry window.",
+      attempts
+    );
   }
 
   private async _attemptOperation(
