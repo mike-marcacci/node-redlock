@@ -283,7 +283,7 @@ export default class Redlock extends EventEmitter {
       const { attempts } = await this._execute(
         this.scripts.acquireScript,
         resources,
-        [value],
+        [value, duration],
         settings
       );
 
@@ -518,11 +518,10 @@ export default class Redlock extends EventEmitter {
       try {
         // Attempt to evaluate the script by its hash.
 
-        const shaResult = (await client.evalsha(
-          script.hash,
-          args.length,
-          args
-        )) as unknown;
+        const shaResult = (await client.evalsha(script.hash, keys.length, [
+          ...keys,
+          ...args,
+        ])) as unknown;
 
         if (typeof shaResult !== "number") {
           throw new Error(
@@ -542,11 +541,10 @@ export default class Redlock extends EventEmitter {
           throw error;
         }
 
-        const rawResult = (await client.eval(
-          script.value,
-          args.length,
-          args
-        )) as unknown;
+        const rawResult = (await client.eval(script.value, keys.length, [
+          ...keys,
+          ...args,
+        ])) as unknown;
 
         if (typeof rawResult !== "number") {
           throw new Error(
