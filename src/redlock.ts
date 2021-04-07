@@ -355,7 +355,7 @@ export default class Redlock extends EventEmitter {
     const { attempts } = await this._execute(
       this.scripts.extendScript,
       existing.resources,
-      [existing.value],
+      [existing.value, duration],
       settings
     );
 
