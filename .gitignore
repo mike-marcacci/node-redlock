@@ -1,5 +1,6 @@
 .DS_Store
 *.sublime-workspace
+.idea/
 /dist
 /node_modules
 /npm-debug.log

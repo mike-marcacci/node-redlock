@@ -6,34 +6,50 @@ volumes:
 services:
   redis_single_instance:
     image: redis
+    ports:
+      - "23401:6379"
 
-  # redis_single_cluster_1:
-  #   image: redis
+  redis_single_cluster_1:
+    image: redis
+    ports:
+      - "23411:6379"
 
-  # redis_single_cluster_2:
-  #   image: redis
+  redis_single_cluster_2:
+    image: redis
+    ports:
+      - "23412:6379"
 
-  # redis_multi_instance_a:
-  #   image: redis
-  # redis_multi_instance_b:
-  #   image: redis
-  # redis_multi_instance_c:
-  #   image: redis
+  redis_multi_instance_a:
+    image: redis
+    ports:
+      - "23421:6379"
+  redis_multi_instance_b:
+    image: redis
+    ports:
+      - "23422:6379"
+  redis_multi_instance_c:
+    image: redis
+    ports:
+      - "23423:6379"
 
-  # redis_multi_cluster_a_1:
-  #   image: redis
-  # redis_multi_cluster_a_2:
-  #   image: redis
+  redis_multi_cluster_a_1:
+    image: redis
+    ports:
+      - "23431:6379"
+  redis_multi_cluster_a_2:
+    image: redis
+    ports:
+      - "23432:6379"
 
-  # redis_multi_cluster_b_1:
-  #   image: redis
-  # redis_multi_cluster_b_2:
-  #   image: redis
-
-  # redis_multi_cluster_c_1:
-  #   image: redis
-  # redis_multi_cluster_c_2:
-  #   image: redis
+    #   redis_multi_cluster_b_1:
+    #     image: redis
+    #   redis_multi_cluster_b_2:
+    #     image: redis
+    #
+    #   redis_multi_cluster_c_1:
+    #     image: redis
+    #   redis_multi_cluster_c_2:
+    #     image: redis
 
   redlock:
     image: node:14
