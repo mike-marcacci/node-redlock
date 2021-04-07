@@ -39,16 +39,6 @@ function test(name, clients){
 			}
 		})
 
-		it('should throw an error if not passed any clients', function(){
-			assert.throws(function(){
-				new Redlock([], {
-					retryCount: 2,
-					retryDelay: 150,
-					retryJitter: 0
-				});
-			});
-		});
-
 		it('emits a clientError event when a client error occurs', function(done){
 			var emitted = 0;
 			function test(err) {
@@ -484,7 +474,7 @@ function test(name, clients){
 				}
 			});
 		});
-		
+
 		describe('callbacks - multi', function(){
 			before(function(done) {
 				var err;
@@ -631,7 +621,7 @@ function test(name, clients){
 				}
 			});
 		});
-		
+
 		describe('promises - multi', function(){
 			before(function(done) {
 				var err;
@@ -772,7 +762,7 @@ function test(name, clients){
 				}
 			});
 		});
-		
+
 		describe('disposer - multi', function(){
 			before(function(done) {
 				var err;
