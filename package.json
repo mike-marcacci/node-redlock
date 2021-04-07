@@ -26,6 +26,7 @@
   },
   "browserslist": "node >= 10",
   "devDependencies": {
+    "@babel/core": "^7.13.14",
     "@babel/preset-env": "^7.13.12",
     "@babel/preset-typescript": "^7.13.0",
     "@types/ioredis": "^4.17.8",
