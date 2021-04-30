@@ -1,11 +1,11 @@
 import { inspect } from "util";
 
-import Client from "ioredis";
+import Client, { Redis } from "ioredis";
 
 import Redlock, { ExecutionError, Lock } from "../src/redlock";
 import { redises } from "./redis-configs";
 
-jest.setTimeout(1900909);
+jest.setTimeout(2000);
 const redis = new Client(redises["redis_single_instance"]);
 
 const settings = {
@@ -13,12 +13,6 @@ const settings = {
   retryDelay: 150,
   retryJitter: 50,
 } as const;
-
-test("acquires a single lock", async () => {
-  const redlock = new Redlock([redis]);
-  const lock = await redlock.acquire(["a"], Number.MAX_SAFE_INTEGER);
-  await lock.release();
-});
 
 describe("awaiting expiration", () => {
   const resource = "tests-redlock:resource:expiration";
@@ -31,8 +25,16 @@ describe("awaiting expiration", () => {
   let three: Lock;
   let four: Lock;
 
-  beforeAll(() => {
-    redlock = new Redlock([redis], settings);
+  const clients = [redis];
+
+  beforeAll(async () => {
+    for (const client of clients) {
+      await checkRedisIsUp(client);
+    }
+  });
+
+  beforeAll(async () => {
+    redlock = new Redlock(clients, settings);
   });
 
   it("should lock a resource", async () => {
@@ -84,17 +86,77 @@ describe("awaiting expiration", () => {
 
   it("should extend an unexpired lock", async () => {
     dependsOnPreviousTest(three);
+    const threeExpires = three.expiration;
     four = await three.extend(800);
     expect(four.expiration).toBeGreaterThan(Date.now() - 1);
     expect(four.attempts).toHaveLength(1);
+    expect(four.expiration).toBeGreaterThan(threeExpires);
+  });
 
-    // TODO: three's expiration has been cleared
-    expect(four.expiration).toBeGreaterThan(three.expiration - 1);
-    expect(four).toBe(three);
+  it("should fail after the maximum retry count is exceeded", async () => {
+    dependsOnPreviousTest(four);
+    try {
+      await redlock.acquire([resource], 200);
+      fail("should throw");
+    } catch (err) {
+      // TODO: ResourceLockedError?
+      expect(err).toBeInstanceOf(ExecutionError);
+      expect(err.attempts).toHaveLength(3);
+    }
+  });
+
+  it("should fail to extend an expired lock", async () => {
+    dependsOnPreviousTest(four);
+    await sleep(four.expiration - Date.now() + 100);
+    try {
+      await three.extend(800);
+      fail("should throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ExecutionError);
+      expect(err.attempts).toHaveLength(0);
+    }
+  });
+
+  it("should issue another lock immediately after a resource is expired", async () => {
+    dependsOnPreviousTest(four);
+    const lock = await redlock.acquire([resource], 800);
+    try {
+      expect(lock.expiration).toBeGreaterThanOrEqual(Date.now());
+      expect(lock.attempts).toHaveLength(1);
+    } finally {
+      await lock.release();
+    }
+  });
+
+  it("should lock a resource with additional options", async () => {
+    const lock = await redlock.acquire([resource], 200, {
+      retryCount: 10,
+      retryDelay: 1,
+    });
+    try {
+      expect(lock.expiration).toBeGreaterThanOrEqual(Date.now());
+      expect(lock.attempts).toHaveLength(1);
+      // TODO: we don't actually check it looked at the options
+      // TODO: old tests did: assert.equal(lock.attemptsRemaining, 9);
+    } finally {
+      await lock.release();
+    }
   });
 
   afterAll(async () => {
-    await redlock.quit();
+    for (const client of clients) {
+      await client.del(resource);
+    }
+  });
+
+  afterAll(async () => {
+    await redlock?.quit();
+  });
+
+  afterAll(async () => {
+    for (const client of clients) {
+      void client.quit().catch(() => {});
+    }
   });
 });
 
@@ -119,6 +181,18 @@ async function acquirePrinting(
   }
 }
 
-afterAll(() => {
-  redis.disconnect();
-});
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function checkRedisIsUp(client: Redis) {
+  const throwIt = (err: Error) => {
+    throw err;
+  };
+  client.on("error", throwIt);
+  const infoPromise = client.info();
+  if (typeof (await Promise.race([infoPromise, sleep(1500)])) !== "string") {
+    throw new Error(
+      `client unable to connect to redis: ${client.options.port}`
+    );
+  }
+  client.removeListener("error", throwIt);
+}

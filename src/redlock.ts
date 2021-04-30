@@ -274,7 +274,7 @@ export default class Redlock extends EventEmitter {
   public async acquire(
     resources: string[],
     duration: number,
-    settings?: Settings
+    settings?: Partial<Settings>
   ): Promise<Lock> {
     const start = Date.now();
     const value = this._random();
