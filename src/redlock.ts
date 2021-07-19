@@ -1,6 +1,5 @@
 import { randomBytes, createHash } from "crypto";
 import { EventEmitter } from "events";
-import { AbortController, AbortSignal } from "abort-controller";
 
 import { Redis as IORedisClient } from "ioredis";
 type Client = IORedisClient;
@@ -96,13 +95,16 @@ export interface Settings {
 }
 
 // Define default settings.
-const defaultSettings: Settings = {
+const defaultSettings: Readonly<Settings> = {
   driftFactor: 0.01,
   retryCount: 10,
   retryDelay: 200,
   retryJitter: 100,
   automaticExtensionThreshold: 500,
 };
+
+// Modifyng this object is forbidden.
+Object.freeze(defaultSettings);
 
 /*
  * This error indicates a failure due to the existence of another lock for one
@@ -283,7 +285,7 @@ export default class Redlock extends EventEmitter {
       const { attempts } = await this._execute(
         this.scripts.acquireScript,
         resources,
-        [value],
+        [value, duration],
         settings
       );
 
@@ -355,7 +357,7 @@ export default class Redlock extends EventEmitter {
     const { attempts } = await this._execute(
       this.scripts.extendScript,
       existing.resources,
-      [existing.value],
+      [existing.value, duration],
       settings
     );
 
@@ -420,15 +422,16 @@ export default class Redlock extends EventEmitter {
               0,
               settings.retryDelay +
                 Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
-            )
+            ),
+            undefined
           );
         });
+      } else {
+        throw new ExecutionError(
+          "The operation was unable to acheive a quorum during its retry window.",
+          attempts
+        );
       }
-
-      throw new ExecutionError(
-        "The operation was unable to acheive a quorum during its retry window.",
-        attempts
-      );
     }
   }
 
@@ -517,12 +520,10 @@ export default class Redlock extends EventEmitter {
       let result: number;
       try {
         // Attempt to evaluate the script by its hash.
-
-        const shaResult = (await client.evalsha(
-          script.hash,
-          args.length,
-          args
-        )) as unknown;
+        const shaResult = (await client.evalsha(script.hash, keys.length, [
+          ...keys,
+          ...args,
+        ])) as unknown;
 
         if (typeof shaResult !== "number") {
           throw new Error(
@@ -534,19 +535,16 @@ export default class Redlock extends EventEmitter {
       } catch (error) {
         // If the redis server does not already have the script cached,
         // reattempt the request with the script's raw text.
-
         if (
           !(error instanceof Error) ||
           !error.message.startsWith("NOSCRIPT")
         ) {
           throw error;
         }
-
-        const rawResult = (await client.eval(
-          script.value,
-          args.length,
-          args
-        )) as unknown;
+        const rawResult = (await client.eval(script.value, keys.length, [
+          ...keys,
+          ...args,
+        ])) as unknown;
 
         if (typeof rawResult !== "number") {
           throw new Error(
@@ -587,7 +585,7 @@ export default class Redlock extends EventEmitter {
   public async using<T>(
     resources: string[],
     duration: number,
-    settings: Settings,
+    settings: Partial<Settings>,
     routine?: (signal: RedlockAbortSignal) => T
   ): Promise<T>;
 
@@ -602,7 +600,7 @@ export default class Redlock extends EventEmitter {
     duration: number,
     settingsOrRoutine:
       | undefined
-      | Settings
+      | Partial<Settings>
       | ((signal: RedlockAbortSignal) => T),
     optionalRoutine?: (signal: RedlockAbortSignal) => T
   ): Promise<T> {
@@ -617,6 +615,12 @@ export default class Redlock extends EventEmitter {
     const routine = optionalRoutine ?? settingsOrRoutine;
     if (typeof routine !== "function") {
       throw new Error("INVARIANT: routine is not a function.");
+    }
+
+    if (settings.automaticExtensionThreshold > duration - 100) {
+      throw new Error(
+        "A lock `duration` must be at least 100ms greater than the `automaticExtensionThreshold` setting."
+      );
     }
 
     // The AbortController/AbortSignal pattern allows the routine to be notified
@@ -654,7 +658,7 @@ export default class Redlock extends EventEmitter {
     queue();
 
     try {
-      return routine(signal);
+      return await routine(signal);
     } finally {
       // Clean up the timer.
       if (timeout) {
