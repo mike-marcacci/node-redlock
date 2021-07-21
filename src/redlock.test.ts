@@ -3,6 +3,11 @@ import Client from "ioredis";
 import Redlock, { ExecutionError, ResourceLockedError } from "./redlock";
 
 const redis = new Client({ host: "redis_single_instance" });
+test.before(async () => {
+  await redis
+    .keys("*")
+    .then((keys) => (keys?.length ? redisA.del(keys) : null));
+});
 
 test("acquires, extends, and releases a single lock", async (t) => {
   const redlock = new Redlock([redis]);
@@ -90,8 +95,6 @@ test("locks fail when redis is unreachable", async (t) => {
   const redlock = new Redlock([redis]);
 
   const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
-
-  // Extend the lock.
   try {
     await redlock.acquire(["b"], duration);
     throw new Error("This lock should not be acquired.");
@@ -110,7 +113,7 @@ test("locks fail when redis is unreachable", async (t) => {
       t.is(e.status, "fulfilled");
       if (e.status === "fulfilled") {
         for (const v of e.value?.votesAgainst?.values()) {
-          t.assert(v.message, "Error: Connection is closed.");
+          t.is(v.message, "Connection is closed.");
         }
       }
     }
@@ -370,6 +373,13 @@ test("the `using` helper is exclusive", async (t) => {
 const redisA = new Client({ host: "redis_multi_instance_a" });
 const redisB = new Client({ host: "redis_multi_instance_b" });
 const redisC = new Client({ host: "redis_multi_instance_c" });
+test.before(async () => {
+  await Promise.all([
+    redisA.keys("*").then((keys) => (keys?.length ? redisA.del(keys) : null)),
+    redisB.keys("*").then((keys) => (keys?.length ? redisB.del(keys) : null)),
+    redisC.keys("*").then((keys) => (keys?.length ? redisC.del(keys) : null)),
+  ]);
+});
 
 test("multi - acquires, extends, and releases a single lock", async (t) => {
   const redlock = new Redlock([redisA, redisB, redisC]);
@@ -423,4 +433,103 @@ test("multi - acquires, extends, and releases a single lock", async (t) => {
   t.is(await redisA.get("a"), null);
   t.is(await redisB.get("a"), null);
   t.is(await redisC.get("a"), null);
+});
+
+test("multi - succeeds when a minority of clients fail", async (t) => {
+  const redlock = new Redlock([redisA, redisB, redisC]);
+
+  const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
+
+  // Set a value on redisC so that lock acquisition fails.
+  await redisC.set("b", "other");
+
+  // Acquire a lock.
+  const lock = await redlock.acquire(["b"], duration);
+  t.is(await redisA.get("b"), lock.value, "The lock value was incorrect.");
+  t.is(await redisB.get("b"), lock.value, "The lock value was incorrect.");
+  t.is(await redisC.get("b"), "other", "The lock value was changed.");
+  t.is(
+    Math.floor((await redisA.pttl("b")) / 100),
+    Math.floor(duration / 100),
+    "The lock expiration was off by more than 100ms"
+  );
+  t.is(
+    Math.floor((await redisB.pttl("b")) / 100),
+    Math.floor(duration / 100),
+    "The lock expiration was off by more than 100ms"
+  );
+  t.is(await redisC.pttl("b"), -1, "The lock expiration was changed");
+
+  // Extend the lock.
+  await lock.extend(3 * duration);
+  t.is(await redisA.get("b"), lock.value, "The lock value was incorrect.");
+  t.is(await redisB.get("b"), lock.value, "The lock value was incorrect.");
+  t.is(await redisC.get("b"), "other", "The lock value was changed.");
+  t.is(
+    Math.floor((await redisA.pttl("b")) / 100),
+    Math.floor((3 * duration) / 100),
+    "The lock expiration was off by more than 100ms"
+  );
+  t.is(
+    Math.floor((await redisB.pttl("b")) / 100),
+    Math.floor((3 * duration) / 100),
+    "The lock expiration was off by more than 100ms"
+  );
+  t.is(await redisC.pttl("b"), -1, "The lock expiration was changed");
+
+  // Release the lock.
+  await lock.release();
+  t.is(await redisA.get("b"), null);
+  t.is(await redisB.get("b"), null);
+  t.is(await redisC.get("b"), "other");
+  await redisC.del("b");
+});
+
+test("multi - fails when a majority of clients fail", async (t) => {
+  const redlock = new Redlock([redisA, redisB, redisC]);
+
+  const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
+
+  // Set a value on redisB and redisC so that lock acquisition fails.
+  await redisB.set("c", "other1");
+  await redisC.set("c", "other2");
+
+  // Acquire a lock.
+  try {
+    await redlock.acquire(["c"], duration);
+    throw new Error("This lock should not be acquired.");
+  } catch (error) {
+    if (!(error instanceof ExecutionError)) {
+      throw error;
+    }
+
+    t.is(
+      error.attempts.length,
+      11,
+      "A failed acquisition must have the configured number of retries."
+    );
+
+    t.is(await redisA.get("c"), null);
+    t.is(await redisB.get("c"), "other1");
+    t.is(await redisC.get("c"), "other2");
+
+    for (const e of await Promise.allSettled(error.attempts)) {
+      t.is(e.status, "fulfilled");
+      if (e.status === "fulfilled") {
+        for (const v of e.value?.votesAgainst?.values()) {
+          t.assert(
+            v instanceof ResourceLockedError,
+            "The error was of the wrong type."
+          );
+          t.is(
+            v.message,
+            "The operation was applied to: 0 of the 1 requested resources."
+          );
+        }
+      }
+    }
+  }
+
+  await redisB.del("c");
+  await redisC.del("c");
 });

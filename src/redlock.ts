@@ -86,6 +86,9 @@ export type ExecutionResult = {
   attempts: ReadonlyArray<Promise<ExecutionStats>>;
 };
 
+/**
+ *
+ */
 export interface Settings {
   readonly driftFactor: number;
   readonly retryCount: number;
