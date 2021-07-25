@@ -9,10 +9,10 @@ on:
 jobs:
   test:
     name: Test with Node.js v${{ matrix.node }} and ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: "ubuntu-latest"
+    container: "node:${{matrix.node}}"
     strategy:
       matrix:
-        os: ["ubuntu-latest"]
         node: ["16"]
     services:
       redis-single-instance:
@@ -25,9 +25,6 @@ jobs:
         image: redis
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node }}
       - name: Install dependancies
         run: yarn install --frozen-lockfile
       - name: Lint the source
