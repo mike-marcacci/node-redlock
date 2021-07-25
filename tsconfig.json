@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["es2020"],
-    "target": "es2020",
+    "target": "es2018",
     "module": "es2020",
     "outDir": "./dist",
     "declaration": true,

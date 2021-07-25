@@ -56,7 +56,9 @@
     "prepare": "yarn build",
     "prepublishOnly": "yarn install && yarn lint && yarn build && yarn test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "node-abort-controller": "^2.0.0"
+  },
   "type": "module",
   "exports": "./dist/index.js"
 }

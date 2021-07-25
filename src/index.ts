@@ -1,6 +1,10 @@
 import { randomBytes, createHash } from "crypto";
 import { EventEmitter } from "events";
 
+// AbortController became available as a global in node version 16. Once version
+// 14 reaches its end-of-life, this can be removed.
+import PolyfillAbortController from "node-abort-controller";
+
 import { Redis as IORedisClient } from "ioredis";
 type Client = IORedisClient;
 
@@ -679,7 +683,11 @@ export default class Redlock extends EventEmitter {
     // The AbortController/AbortSignal pattern allows the routine to be notified
     // of a failure to extend the lock, and subsequent expiration. In the event
     // of an abort, the error object will be made available at `signal.error`.
-    const controller = new AbortController();
+    const controller =
+      typeof AbortController === "undefined"
+        ? new PolyfillAbortController()
+        : new AbortController();
+
     const signal = controller.signal as RedlockAbortSignal;
 
     function queue(): void {

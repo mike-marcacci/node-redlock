@@ -13,7 +13,7 @@ jobs:
     container: "node:${{matrix.node}}"
     strategy:
       matrix:
-        node: ["16"]
+        node: ["12", "14", "16"]
     services:
       redis-single-instance:
         image: redis
