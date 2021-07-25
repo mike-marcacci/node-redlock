@@ -1,17 +1,13 @@
-[![npm version](https://badge.fury.io/js/redlock.svg)](https://www.npmjs.com/package/redlock)
-[![Build Status](https://travis-ci.org/mike-marcacci/node-redlock.svg)](https://travis-ci.org/mike-marcacci/node-redlock)
-[![Coverage Status](https://coveralls.io/repos/mike-marcacci/node-redlock/badge.svg)](https://coveralls.io/r/mike-marcacci/node-redlock)
+[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml)
+[![Current Version](https://badgen.net/npm/v/redlock)](https://npm.im/redlock)
+[![Supported Node.js Versions](https://badgen.net/npm/node/redlock)](https://npm.im/redlock)
 
 # Redlock
 
 This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
 
 - [Installation](#installation)
-- [Usage (Promise Style)](#usage-promise-style)
-- [Usage (Disposer Style)](#usage-disposer-style)
-- [Usage (Callback Style)](#usage-callback-style)
-- [Locking multiple resources](#locking-multiple-resources)
-- [API Docs](#api-docs)
+- [Usage](#usage)
 
 ### High-Availability Recommendations
 
@@ -80,6 +76,10 @@ const redlock = new Redlock(
     // to improve performance under high contention
     // see https://www.awsarchitectureblog.com/2015/03/backoff.html
     retryJitter: 200, // time in ms
+
+    // The minimum remaining time on a lock before an extension is automatically
+    // attempted with the `using` API.
+    automaticExtensionThreshold: 500, // time in ms
   }
 );
 ```
@@ -141,3 +141,7 @@ await somethingElse();
 // Release the lock.
 await lock.release();
 ```
+
+## API
+
+Please view the (very concise) source code or TypeScript definitions for a detailed breakdown of the API.

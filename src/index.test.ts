@@ -1,6 +1,6 @@
 import test from "ava";
 import Client from "ioredis";
-import Redlock, { ExecutionError, ResourceLockedError } from "./redlock";
+import Redlock, { ExecutionError, ResourceLockedError } from "./index.js";
 
 const redis = new Client({ host: "redis_single_instance" });
 test.before(async () => {

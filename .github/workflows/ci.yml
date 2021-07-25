@@ -1,0 +1,38 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test with Node.js v${{ matrix.node }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+        node: ["16"]
+    services:
+      redis_single_instance:
+        image: redis
+      redis_multi_instance_a:
+        image: redis
+      redis_multi_instance_b:
+        image: redis
+      redis_multi_instance_c:
+        image: redis
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependancies
+        run: yarn install --frozen-lockfile
+      - name: Lint the source
+        run: yarn lint
+      - name: Transpile into dist
+        run: yarn build
+      - name: Run tests
+        run: yarn test

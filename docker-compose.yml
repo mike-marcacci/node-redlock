@@ -74,7 +74,7 @@ services:
       - redis_single_instance
     image: node:16
     working_dir: /workspace
-    command: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/redlock.js yarn test:development
+    command: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/index.js yarn test:development
     environment:
       NODE_ENV: development
     volumes:

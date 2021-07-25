@@ -19,19 +19,26 @@
     "redis"
   ],
   "files": [
-    "dist/index.js"
+    "dist/index.d.ts",
+    "dist/index.js",
+    "dist/index.js.map"
   ],
   "engines": {
     "node": ">=12"
   },
-  "browserslist": "node >= 10",
+  "browserslist": "node >= 12",
+  "ava": {
+    "nodeArguments": [
+      "--experimental-specifier-resolution=node"
+    ]
+  },
   "devDependencies": {
-    "@types/ioredis": "^4.17.8",
-    "@types/node": "^16.3.2",
-    "@typescript-eslint/eslint-plugin": "^4.9.0",
-    "@typescript-eslint/parser": "^4.9.0",
+    "@types/ioredis": "^4.26.6",
+    "@types/node": "^16.4.2",
+    "@typescript-eslint/eslint-plugin": "^4.28.4",
+    "@typescript-eslint/parser": "^4.28.4",
     "ava": "^3.13.0",
-    "eslint": "^7.14.0",
+    "eslint": "^7.31.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.2.0",
     "ioredis": "^4.19.2",
@@ -49,5 +56,7 @@
     "prepare": "yarn build",
     "prepublishOnly": "yarn install && yarn lint && yarn build && yarn test"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "type": "module",
+  "exports": "./dist/index.js"
 }
