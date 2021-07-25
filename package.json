@@ -1,49 +1,64 @@
 {
   "name": "redlock",
-  "version": "4.2.0",
+  "version": "5.0.0-alpha.0",
   "description": "A node.js redlock implementation for distributed redis locks",
-  "main": "redlock.js",
-  "scripts": {
-    "test": "istanbul cover mocha",
-    "test-ci": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls"
+  "license": "MIT",
+  "author": {
+    "name": "Mike Marcacci",
+    "email": "mike.marcacci@gmail.com"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mike-marcacci/node-redlock.git"
-  },
+  "repository": "https://github.com/mike-marcacci/node-redlock.git",
+  "homepage": "https://github.com/mike-marcacci/node-redlock#readme",
+  "bugs": "https://github.com/mike-marcacci/node-redlock/issues",
+  "main": "dist/index.js",
   "keywords": [
     "nodejs",
-    "iojs",
     "redlock",
     "distributed",
     "lock",
     "redis"
   ],
-  "author": "Mike Marcacci",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mike-marcacci/node-redlock/issues"
+  "files": [
+    "dist/index.d.ts",
+    "dist/index.js",
+    "dist/index.js.map"
+  ],
+  "engines": {
+    "node": ">=12"
   },
-  "homepage": "https://github.com/mike-marcacci/node-redlock",
+  "browserslist": "node >= 12",
+  "ava": {
+    "nodeArguments": [
+      "--experimental-specifier-resolution=node"
+    ]
+  },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "coveralls": "^3.1.0",
-    "ioredis": "^4.18.0",
-    "istanbul": "^0.4.2",
-    "mocha": "^8.1.3",
-    "redis": "^3.0.2"
+    "@types/ioredis": "^4.26.6",
+    "@types/node": "^16.4.2",
+    "@typescript-eslint/eslint-plugin": "^4.28.4",
+    "@typescript-eslint/parser": "^4.28.4",
+    "ava": "^3.13.0",
+    "eslint": "^7.31.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.2.0",
+    "ioredis": "^4.19.2",
+    "nodemon": "^2.0.6",
+    "prettier": "^2.2.1",
+    "typescript": "^4.1.2"
+  },
+  "scripts": {
+    "format": "prettier --list-different --write '**/*.{json,yml,md,ts}'",
+    "lint": "prettier -c '**/*.{json,yml,md,ts}' && eslint src --ext ts",
+    "build": "rm -rf dist && tsc",
+    "build:development": "rm -rf dist && tsc --watch",
+    "test": "ava --verbose dist/*.test.js",
+    "test:development": "ava --verbose --watch dist/*.test.js",
+    "prepare": "yarn build",
+    "prepublishOnly": "yarn install && yarn lint && yarn build && yarn test"
   },
   "dependencies": {
-    "bluebird": "^3.7.2"
+    "node-abort-controller": "^2.0.0"
   },
-  "engines": {
-    "node": ">=8.0.0"
-  },
-  "config": {
-    "blanket": {
-      "pattern": [
-        "redlock.js"
-      ]
-    }
-  }
+  "type": "module",
+  "exports": "./dist/index.js"
 }

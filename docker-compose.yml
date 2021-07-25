@@ -4,19 +4,83 @@ volumes:
   node_modules:
 
 services:
+  redis-single-instance:
+    image: redis
 
-  # This container builds the server.
-  redlock:
-    build:
-      context: .
-      target: build
-    command: yarn build:development
+  redis-multi-instance-a:
+    image: redis
+  redis-multi-instance-b:
+    image: redis
+  redis-multi-instance-c:
+    image: redis
+
+  # redis-single-cluster-1:
+  #   image: redis
+
+  # redis-single-cluster-2:
+  #   image: redis
+
+  # redis-multi-cluster-a-1:
+  #   image: redis
+  # redis-multi-cluster-a-2:
+  #   image: redis
+
+  # redis-multi-cluster-b-1:
+  #   image: redis
+  # redis-multi-cluster-b-2:
+  #   image: redis
+
+  # redis-multi-cluster-c-1:
+  #   image: redis
+  # redis-multi-cluster-c-2:
+  #   image: redis
+
+  # This container installs node modules into the node_modules volume.
+  installer:
+    image: node:16
+    working_dir: /workspace
+    command: yarn
     environment:
       NODE_ENV: development
     volumes:
       - type: bind
         source: .
-        target: /build
+        target: /workspace
       - type: volume
         source: node_modules
-        target: /build/node_modules
+        target: /workspace/node_modules
+
+  # This container watches for changes and builds the application.
+  builder:
+    depends_on:
+      - installer
+    image: node:16
+    working_dir: /workspace
+    command: ./scripts/await.sh node_modules/.bin/tsc yarn build:development
+    environment:
+      NODE_ENV: development
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+      - type: volume
+        source: node_modules
+        target: /workspace/node_modules
+
+  # This container runs the tests.
+  tester:
+    depends_on:
+      - builder
+      - redis_single_instance
+    image: node:16
+    working_dir: /workspace
+    command: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/index.js yarn test:development
+    environment:
+      NODE_ENV: development
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+      - type: volume
+        source: node_modules
+        target: /workspace/node_modules
