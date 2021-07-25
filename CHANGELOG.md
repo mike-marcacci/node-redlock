@@ -14,3 +14,10 @@
 - Stop testing on node version 8. (Due to dev dependency requirements only.)
 - Update docs (@ricmatsui via [#80](https://github.com/mike-marcacci/node-redlock/pull/80)).
 - Use evalsha for scripts (@yosiat via [#77](https://github.com/mike-marcacci/node-redlock/pull/77)).
+
+## v5.0.0-alpha1
+
+- Complete rewrite using TypeScript.
+- **BREAKING** Significant API changes; see [README.md](./README.md)
+- **BREAKING** Remove all production dependencies (replacing Bluebird with native promises).
+- **BREAKING** Drop support for Node < 12

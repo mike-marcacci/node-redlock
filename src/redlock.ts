@@ -184,6 +184,19 @@ export default class Redlock extends EventEmitter {
   ) {
     super();
 
+    // Prevent crashes on error events.
+    this.on("error", () => {
+      // Because redlock is designed for high availability, it does not care if
+      // a minority of redis instances/clusters fail at an operation.
+      //
+      // However, it can be helpful to monitor and log such cases. Redlock emits
+      // an "error" event whenever it encounters an error, even if the error is
+      // ignored in its normal operation.
+      //
+      // This function serves to prevent node's default behavior of crashing
+      // when an "error" event is emitted in the absence of listeners.
+    });
+
     // Create a new array of client, to ensure no accidental mutation.
     this.clients = new Set(clients);
     if (this.clients.size === 0) {
@@ -577,6 +590,9 @@ export default class Redlock extends EventEmitter {
         );
       }
 
+      // Emit the error on the redlock instance for observability.
+      this.emit("error", error);
+
       return {
         vote: "against",
         client,
@@ -584,6 +600,40 @@ export default class Redlock extends EventEmitter {
       };
     }
   }
+
+  /**
+   * Wrap and execute a routine in the context of an auto-extending lock,
+   * returning a promise of the routine's value. In the case that auto-extension
+   * fails, an AbortSignal will be updated to indicate that abortion of the
+   * routine is in order, and to pass along the encountered error.
+   *
+   * @example
+   * ```ts
+   * await redlock.using([senderId, recipientId], 5000, { retryCount: 5 }, async (signal) => {
+   *   const senderBalance = await getBalance(senderId);
+   *   const recipientBalance = await getBalance(recipientId);
+   *
+   *   if (senderBalance < amountToSend) {
+   *     throw new Error("Insufficient balance.");
+   *   }
+   *
+   *   // The abort signal will be true if:
+   *   // 1. the above took long enough that the lock needed to be extended
+   *   // 2. redlock was unable to extend the lock
+   *   //
+   *   // In such a case, exclusivity can no longer be guaranteed for further
+   *   // operations, and should be handled as an exceptional case.
+   *   if (signal.aborted) {
+   *     throw signal.error;
+   *   }
+   *
+   *   await setBalances([
+   *     {id: senderId, balance: senderBalance - amountToSend},
+   *     {id: recipientId, balance: recipientBalance + amountToSend},
+   *   ]);
+   * });
+   * ```
+   */
 
   public async using<T>(
     resources: string[],

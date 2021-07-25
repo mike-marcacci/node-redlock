@@ -15,7 +15,7 @@ test("acquires, extends, and releases a single lock", async (t) => {
   const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
 
   // Acquire a lock.
-  const lock = await redlock.acquire(["a"], duration);
+  let lock = await redlock.acquire(["a"], duration);
   t.is(await redis.get("a"), lock.value, "The lock value was incorrect.");
   t.is(
     Math.floor((await redis.pttl("a")) / 100),
@@ -24,7 +24,7 @@ test("acquires, extends, and releases a single lock", async (t) => {
   );
 
   // Extend the lock.
-  await lock.extend(3 * duration);
+  lock = await lock.extend(3 * duration);
   t.is(await redis.get("a"), lock.value, "The lock value was incorrect.");
   t.is(
     Math.floor((await redis.pttl("a")) / 100),
@@ -43,7 +43,7 @@ test("acquires, extends, and releases a multi-resource lock", async (t) => {
   const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
 
   // Acquire a lock.
-  const lock = await redlock.acquire(["a1", "a2"], duration);
+  let lock = await redlock.acquire(["a1", "a2"], duration);
   t.is(await redis.get("a1"), lock.value, "The lock value was incorrect.");
   t.is(await redis.get("a2"), lock.value, "The lock value was incorrect.");
   t.is(
@@ -58,7 +58,7 @@ test("acquires, extends, and releases a multi-resource lock", async (t) => {
   );
 
   // Extend the lock.
-  await lock.extend(3 * duration);
+  lock = await lock.extend(3 * duration);
   t.is(await redis.get("a1"), lock.value, "The lock value was incorrect.");
   t.is(await redis.get("a2"), lock.value, "The lock value was incorrect.");
   t.is(
@@ -387,7 +387,7 @@ test("multi - acquires, extends, and releases a single lock", async (t) => {
   const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
 
   // Acquire a lock.
-  const lock = await redlock.acquire(["a"], duration);
+  let lock = await redlock.acquire(["a"], duration);
   t.is(await redisA.get("a"), lock.value, "The lock value was incorrect.");
   t.is(await redisB.get("a"), lock.value, "The lock value was incorrect.");
   t.is(await redisC.get("a"), lock.value, "The lock value was incorrect.");
@@ -408,7 +408,7 @@ test("multi - acquires, extends, and releases a single lock", async (t) => {
   );
 
   // Extend the lock.
-  await lock.extend(3 * duration);
+  lock = await lock.extend(3 * duration);
   t.is(await redisA.get("a"), lock.value, "The lock value was incorrect.");
   t.is(await redisB.get("a"), lock.value, "The lock value was incorrect.");
   t.is(await redisC.get("a"), lock.value, "The lock value was incorrect.");
@@ -444,7 +444,7 @@ test("multi - succeeds when a minority of clients fail", async (t) => {
   await redisC.set("b", "other");
 
   // Acquire a lock.
-  const lock = await redlock.acquire(["b"], duration);
+  let lock = await redlock.acquire(["b"], duration);
   t.is(await redisA.get("b"), lock.value, "The lock value was incorrect.");
   t.is(await redisB.get("b"), lock.value, "The lock value was incorrect.");
   t.is(await redisC.get("b"), "other", "The lock value was changed.");
@@ -461,7 +461,7 @@ test("multi - succeeds when a minority of clients fail", async (t) => {
   t.is(await redisC.pttl("b"), -1, "The lock expiration was changed");
 
   // Extend the lock.
-  await lock.extend(3 * duration);
+  lock = await lock.extend(3 * duration);
   t.is(await redisA.get("b"), lock.value, "The lock value was incorrect.");
   t.is(await redisB.get("b"), lock.value, "The lock value was incorrect.");
   t.is(await redisC.get("b"), "other", "The lock value was changed.");
