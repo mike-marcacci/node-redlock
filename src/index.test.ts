@@ -2,7 +2,7 @@ import test from "ava";
 import Client from "ioredis";
 import Redlock, { ExecutionError, ResourceLockedError } from "./index.js";
 
-const redis = new Client({ host: "redis_single_instance" });
+const redis = new Client({ host: "redis-single-instance" });
 test.before(async () => {
   await redis
     .keys("*")
@@ -370,9 +370,9 @@ test("the `using` helper is exclusive", async (t) => {
   t.is(await redis.get("y"), null, "The lock was not released.");
 });
 
-const redisA = new Client({ host: "redis_multi_instance_a" });
-const redisB = new Client({ host: "redis_multi_instance_b" });
-const redisC = new Client({ host: "redis_multi_instance_c" });
+const redisA = new Client({ host: "redis-multi-instance-a" });
+const redisB = new Client({ host: "redis-multi-instance-b" });
+const redisC = new Client({ host: "redis-multi-instance-c" });
 test.before(async () => {
   await Promise.all([
     redisA.keys("*").then((keys) => (keys?.length ? redisA.del(keys) : null)),

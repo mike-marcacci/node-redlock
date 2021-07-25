@@ -15,13 +15,13 @@ jobs:
         os: ["ubuntu-latest"]
         node: ["16"]
     services:
-      redis_single_instance:
+      redis-single-instance:
         image: redis
-      redis_multi_instance_a:
+      redis-multi-instance-a:
         image: redis
-      redis_multi_instance_b:
+      redis-multi-instance-b:
         image: redis
-      redis_multi_instance_c:
+      redis-multi-instance-c:
         image: redis
     steps:
       - uses: actions/checkout@v2

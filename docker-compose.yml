@@ -4,35 +4,35 @@ volumes:
   node_modules:
 
 services:
-  redis_single_instance:
+  redis-single-instance:
     image: redis
 
-  redis_multi_instance_a:
+  redis-multi-instance-a:
     image: redis
-  redis_multi_instance_b:
+  redis-multi-instance-b:
     image: redis
-  redis_multi_instance_c:
+  redis-multi-instance-c:
     image: redis
 
-  # redis_single_cluster_1:
+  # redis-single-cluster-1:
   #   image: redis
 
-  # redis_single_cluster_2:
+  # redis-single-cluster-2:
   #   image: redis
 
-  # redis_multi_cluster_a_1:
+  # redis-multi-cluster-a-1:
   #   image: redis
-  # redis_multi_cluster_a_2:
-  #   image: redis
-
-  # redis_multi_cluster_b_1:
-  #   image: redis
-  # redis_multi_cluster_b_2:
+  # redis-multi-cluster-a-2:
   #   image: redis
 
-  # redis_multi_cluster_c_1:
+  # redis-multi-cluster-b-1:
   #   image: redis
-  # redis_multi_cluster_c_2:
+  # redis-multi-cluster-b-2:
+  #   image: redis
+
+  # redis-multi-cluster-c-1:
+  #   image: redis
+  # redis-multi-cluster-c-2:
   #   image: redis
 
   # This container installs node modules into the node_modules volume.
