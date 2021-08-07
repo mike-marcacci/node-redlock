@@ -1,4 +1,4 @@
-[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml)
+[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml?query=branch%3Amain++)
 [![Current Version](https://badgen.net/npm/v/redlock)](https://npm.im/redlock)
 [![Supported Node.js Versions](https://badgen.net/npm/node/redlock)](https://npm.im/redlock)
 
@@ -8,6 +8,8 @@ This is a node.js implementation of the [redlock](http://redis.io/topics/distloc
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Error Handling](#error-handling)
+- [API](#api)
 
 ### High-Availability Recommendations
 
@@ -84,6 +86,45 @@ const redlock = new Redlock(
 );
 ```
 
+## Usage
+
+The `using` method wraps and executes a routine in the context of an auto-extending lock, returning a promise of the routine's value. In the case that auto-extension fails, an AbortSignal will be updated to indicate that abortion of the routine is in order, and to pass along the encountered error.
+
+```ts
+await redlock.using([senderId, recipientId], 5000, async (signal) => {
+  // Do something...
+  await something();
+
+  // Make sure any attempted lock extension has not failed.
+  if (signal.aborted) {
+    throw signal.error;
+  }
+
+  // Do something else...
+  await somethingElse();
+});
+```
+
+Alternatively, locks can be acquired and released directly:
+
+```ts
+// Acquire a lock.
+let lock = await redlock.acquire(["a"], 5000);
+try {
+  // Do something...
+  await something();
+
+  // Extend the lock.
+  lock = await lock.extend(5000);
+
+  // Do something else...
+  await somethingElse();
+} finally {
+  // Release the lock.
+  await lock.release();
+}
+```
+
 ## Error Handling
 
 Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation.
@@ -103,44 +144,6 @@ redlock.on("error", (error) => {
 ```
 
 Additionally, a per-attempt and per-client stats (including errors) are made available on the `attempt` propert of both `Lock` and `ExecutionError` classes.
-
-## Usage
-
-The `using` method wraps and executes a routine in the context of an auto-extending lock, returning a promise of the routine's value. In the case that auto-extension fails, an AbortSignal will be updated to indicate that abortion of the routine is in order, and to pass along the encountered error.
-
-```ts
-await redlock.using([senderId, recipientId], 5000, async (signal) => {
-  // Do something...
-  await something();
-
-  // Make sure any necessary lock extension has not failed.
-  if (signal.aborted) {
-    throw signal.error;
-  }
-
-  // Do something else...
-  await somethingElse();
-});
-```
-
-Alternatively, locks can be acquired and released directly:
-
-```ts
-// Acquire a lock.
-let lock = await redlock.acquire(["a"], 5000);
-
-// Do something...
-await something();
-
-// Extend the lock.
-lock = await lock.extend(5000);
-
-// Do something else...
-await somethingElse();
-
-// Release the lock.
-await lock.release();
-```
 
 ## API
 

@@ -54,7 +54,7 @@
     "test": "ava --verbose dist/*.test.js",
     "test:development": "ava --verbose --watch dist/*.test.js",
     "prepare": "yarn build",
-    "prepublishOnly": "yarn install && yarn lint && yarn build && yarn test"
+    "prepublishOnly": "yarn install && yarn lint && yarn build"
   },
   "dependencies": {
     "node-abort-controller": "^2.0.0"
