@@ -424,4 +424,6 @@ function run(namespace: string, redis: Client | Cluster): void {
 
 run("instance", new Redis({ host: "redis-single-instance" }));
 
-run("cluster", new Cluster([{ host: "redis-single-cluster-1" }]));
+if (process.env.SKIP_CLUSTER_TESTS !== "true") {
+  run("cluster", new Cluster([{ host: "redis-single-cluster-1" }]));
+}

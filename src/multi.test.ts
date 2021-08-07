@@ -233,9 +233,11 @@ run(
   new Redis({ host: "redis-multi-instance-c" })
 );
 
-run(
-  "cluster",
-  new Cluster([{ host: "redis-multi-cluster-a-1" }]),
-  new Cluster([{ host: "redis-multi-cluster-b-1" }]),
-  new Cluster([{ host: "redis-multi-cluster-c-1" }])
-);
+if (process.env.SKIP_CLUSTER_TESTS !== "true") {
+  run(
+    "cluster",
+    new Cluster([{ host: "redis-multi-cluster-a-1" }]),
+    new Cluster([{ host: "redis-multi-cluster-b-1" }]),
+    new Cluster([{ host: "redis-multi-cluster-c-1" }])
+  );
+}
