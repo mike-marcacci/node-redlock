@@ -59,6 +59,5 @@
   "dependencies": {
     "node-abort-controller": "^2.0.0"
   },
-  "type": "module",
   "exports": "./dist/index.js"
 }
