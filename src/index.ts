@@ -708,7 +708,7 @@ export default class Redlock extends EventEmitter {
           return (extension = extend());
         }
 
-        signal.error = error;
+        signal.error = error instanceof Error ? error : new Error(`${error}`);
         controller.abort();
       }
     }
