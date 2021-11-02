@@ -260,7 +260,7 @@ test("the `using` helper acquires, extends, and releases locks", async (t) => {
 
   const duration = 300;
 
-  await redlock.using(
+  const valueP: Promise<string | null> = redlock.using(
     ["x"],
     duration,
     {
@@ -288,6 +288,8 @@ test("the `using` helper acquires, extends, and releases locks", async (t) => {
       return lockValue;
     }
   );
+
+  await valueP;
 
   t.is(await redis.get("x"), null, "The lock was not released.");
 });

@@ -643,13 +643,13 @@ export default class Redlock extends EventEmitter {
     resources: string[],
     duration: number,
     settings: Partial<Settings>,
-    routine?: (signal: RedlockAbortSignal) => T
+    routine?: (signal: RedlockAbortSignal) => Promise<T>
   ): Promise<T>;
 
   public async using<T>(
     resources: string[],
     duration: number,
-    routine: (signal: RedlockAbortSignal) => T
+    routine: (signal: RedlockAbortSignal) => Promise<T>
   ): Promise<T>;
 
   public async using<T>(
@@ -658,8 +658,8 @@ export default class Redlock extends EventEmitter {
     settingsOrRoutine:
       | undefined
       | Partial<Settings>
-      | ((signal: RedlockAbortSignal) => T),
-    optionalRoutine?: (signal: RedlockAbortSignal) => T
+      | ((signal: RedlockAbortSignal) => Promise<T>),
+    optionalRoutine?: (signal: RedlockAbortSignal) => Promise<T>
   ): Promise<T> {
     const settings =
       settingsOrRoutine && typeof settingsOrRoutine !== "function"
