@@ -10,7 +10,15 @@
   "repository": "https://github.com/mike-marcacci/node-redlock.git",
   "homepage": "https://github.com/mike-marcacci/node-redlock#readme",
   "bugs": "https://github.com/mike-marcacci/node-redlock/issues",
-  "main": "dist/index.js",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
   "keywords": [
     "nodejs",
     "redlock",
@@ -20,8 +28,10 @@
   ],
   "files": [
     "dist/index.d.ts",
-    "dist/index.js",
-    "dist/index.js.map"
+    "dist/esm/index.js",
+    "dist/esm/index.js.map",
+    "dist/cjs/index.js",
+    "dist/cjs/index.js.map"
   ],
   "engines": {
     "node": ">=12"
@@ -49,7 +59,7 @@
   "scripts": {
     "format": "prettier --list-different --write '**/*.{json,yml,md,ts}'",
     "lint": "prettier -c '**/*.{json,yml,md,ts}' && eslint src --ext ts",
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && tsc && tsc -p tsconfig.cjs.json && ./tools/fixup",
     "build:development": "rm -rf dist && tsc --watch",
     "test": "ava --verbose dist/*.test.js",
     "test:development": "ava --verbose --watch dist/*.test.js",
@@ -58,7 +68,5 @@
   },
   "dependencies": {
     "node-abort-controller": "^2.0.0"
-  },
-  "type": "module",
-  "exports": "./dist/index.js"
+  }
 }
