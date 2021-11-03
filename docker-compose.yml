@@ -258,10 +258,28 @@ services:
   tester:
     depends_on:
       - builder
-      - redis_single_instance
+      - redis-single-instance
+      - redis-multi-instance-a
+      - redis-multi-instance-b
+      - redis-multi-instance-c
+      - redis-single-cluster-1
+      - redis-single-cluster-2
+      - redis-single-cluster-3
+      - redis-single-cluster-4
+      - redis-single-cluster-5
+      - redis-single-cluster-6
       - redis-single-cluster
+      - redis-multi-cluster-a-1
+      - redis-multi-cluster-a-2
+      - redis-multi-cluster-a-3
       - redis-multi-cluster-a
+      - redis-multi-cluster-b-1
+      - redis-multi-cluster-b-2
+      - redis-multi-cluster-b-3
       - redis-multi-cluster-b
+      - redis-multi-cluster-c-1
+      - redis-multi-cluster-c-2
+      - redis-multi-cluster-c-3
       - redis-multi-cluster-c
     image: node:16
     working_dir: /workspace
