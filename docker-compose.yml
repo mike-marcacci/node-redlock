@@ -285,7 +285,7 @@ services:
       - redis-multi-cluster-c
     image: node:16
     working_dir: /workspace
-    entrypoint: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/index.js
+    entrypoint: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/esm/index.js
     command: yarn test:development
     tty: true
     environment:

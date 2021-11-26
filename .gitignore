@@ -1,6 +1,8 @@
 .DS_Store
 *.sublime-workspace
-/dist
+/dist/**/*.js
+/dist/**/*.js.map
+/dist/**/*.d.ts
 /node_modules
 /npm-debug.log
 /package-lock.json
