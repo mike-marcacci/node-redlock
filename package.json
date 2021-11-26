@@ -33,18 +33,18 @@
     ]
   },
   "devDependencies": {
-    "@types/ioredis": "^4.26.6",
-    "@types/node": "^16.4.2",
-    "@typescript-eslint/eslint-plugin": "^4.28.4",
-    "@typescript-eslint/parser": "^4.28.4",
+    "@types/ioredis": "^4.28.1",
+    "@types/node": "^16.11.10",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
     "ava": "^3.13.0",
-    "eslint": "^7.31.0",
+    "eslint": "^8.3.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^3.2.0",
-    "ioredis": "^4.19.2",
-    "nodemon": "^2.0.6",
-    "prettier": "^2.2.1",
-    "typescript": "~4.4.3"
+    "eslint-plugin-prettier": "^4.0.0",
+    "ioredis": "^4.28.1",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.5.0",
+    "typescript": "~4.5.2"
   },
   "scripts": {
     "format": "prettier --list-different --write '**/*.{json,yml,md,ts}'",
@@ -54,10 +54,10 @@
     "test": "ava --verbose dist/*.test.js",
     "test:development": "ava --verbose --watch dist/*.test.js",
     "prepare": "yarn build",
-    "prepublishOnly": "yarn install && yarn lint && yarn build && yarn test"
+    "prepublishOnly": "yarn install && yarn lint && yarn build"
   },
   "dependencies": {
-    "node-abort-controller": "^2.0.0"
+    "node-abort-controller": "^3.0.1"
   },
   "type": "module",
   "exports": "./dist/index.js"

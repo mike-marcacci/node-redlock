@@ -1,4 +1,4 @@
-[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml)
+[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml?query=branch%3Amain++)
 [![Current Version](https://badgen.net/npm/v/redlock)](https://npm.im/redlock)
 [![Supported Node.js Versions](https://badgen.net/npm/node/redlock)](https://npm.im/redlock)
 
@@ -8,33 +8,9 @@ This is a node.js implementation of the [redlock](http://redis.io/topics/distloc
 
 - [Installation](#installation)
 - [Usage](#usage)
-
-### High-Availability Recommendations
-
-- Use at least 3 independent servers or clusters
-- Use an odd number of independent redis **_servers_** for most installations
-- Use an odd number of independent redis **_clusters_** for massive installations
-- When possible, distribute redis nodes across different physical machines
-
-### Using Cluster/Sentinel
-
-**_Please make sure to use a client with built-in cluster support, such as [ioredis](https://github.com/luin/ioredis)._**
-
-It is completely possible to use a _single_ redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
-
-Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
-
-This is why redlock allows you to specify multiple independent nodes/clusters: by requiring consensus between them, we can safely take out or fail-over a minority of nodes without invalidating active locks.
-
-To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
-
-### How do I check if something is locked?
-
-The purpose of redlock is to provide exclusivity guarantees on a resource over a duration of time, and is not designed to report the ownership status of a resource. For example, if you are on the smaller side of a network partition you will fail to acquire a lock, but you don't know if the lock exists on the other side; all you know is that you can't guarantee exclusivity on yours. This is further complicated by retry behavior, and even moreso when acquiring a lock on more than one resource.
-
-That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable".
-
-Note that with `retryCount=-1` there will be unlimited retries until the lock is aquired.
+- [Error Handling](#error-handling)
+- [API](#api)
+- [Guidance](#guidance)
 
 ## Installation
 
@@ -84,6 +60,45 @@ const redlock = new Redlock(
 );
 ```
 
+## Usage
+
+The `using` method wraps and executes a routine in the context of an auto-extending lock, returning a promise of the routine's value. In the case that auto-extension fails, an AbortSignal will be updated to indicate that abortion of the routine is in order, and to pass along the encountered error.
+
+```ts
+await redlock.using([senderId, recipientId], 5000, async (signal) => {
+  // Do something...
+  await something();
+
+  // Make sure any attempted lock extension has not failed.
+  if (signal.aborted) {
+    throw signal.error;
+  }
+
+  // Do something else...
+  await somethingElse();
+});
+```
+
+Alternatively, locks can be acquired and released directly:
+
+```ts
+// Acquire a lock.
+let lock = await redlock.acquire(["a"], 5000);
+try {
+  // Do something...
+  await something();
+
+  // Extend the lock.
+  lock = await lock.extend(5000);
+
+  // Do something else...
+  await somethingElse();
+} finally {
+  // Release the lock.
+  await lock.release();
+}
+```
+
 ## Error Handling
 
 Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation.
@@ -104,44 +119,70 @@ redlock.on("error", (error) => {
 
 Additionally, a per-attempt and per-client stats (including errors) are made available on the `attempt` propert of both `Lock` and `ExecutionError` classes.
 
-## Usage
-
-The `using` method wraps and executes a routine in the context of an auto-extending lock, returning a promise of the routine's value. In the case that auto-extension fails, an AbortSignal will be updated to indicate that abortion of the routine is in order, and to pass along the encountered error.
-
-```ts
-await redlock.using([senderId, recipientId], 5000, async (signal) => {
-  // Do something...
-  await something();
-
-  // Make sure any necessary lock extension has not failed.
-  if (signal.aborted) {
-    throw signal.error;
-  }
-
-  // Do something else...
-  await somethingElse();
-});
-```
-
-Alternatively, locks can be acquired and released directly:
-
-```ts
-// Acquire a lock.
-let lock = await redlock.acquire(["a"], 5000);
-
-// Do something...
-await something();
-
-// Extend the lock.
-lock = await lock.extend(5000);
-
-// Do something else...
-await somethingElse();
-
-// Release the lock.
-await lock.release();
-```
-
 ## API
 
 Please view the (very concise) source code or TypeScript definitions for a detailed breakdown of the API.
+
+## Guidance
+
+### Contributing
+
+Please see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for information on developing, running, and testing this library.
+
+### High-Availability Recommendations
+
+- Use at least 3 independent servers or clusters
+- Use an odd number of independent redis **_servers_** for most installations
+- Use an odd number of independent redis **_clusters_** for massive installations
+- When possible, distribute redis nodes across different physical machines
+
+### Using Cluster/Sentinel
+
+**_Please make sure to use a client with built-in cluster support, such as [ioredis](https://github.com/luin/ioredis)._**
+
+It is completely possible to use a _single_ redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
+
+Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
+
+This is why redlock allows you to specify multiple independent nodes/clusters: by requiring consensus between them, we can safely take out or fail-over a minority of nodes without invalidating active locks.
+
+To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
+
+Also note that when acquiring a lock on multiple resources, commands are executed in a single call to redis. Redis clusters require that all keys exist in a command belong to the same node. **If you are using a redis cluster or clusters and need to lock multiple resources together you MUST use [redis hash tags](https://redis.io/topics/cluster-spec#keys-hash-tags) (ie. use `ignored{considered}ignored{ignored}` notation in resource strings) to ensure that all keys resolve to the same node.** Chosing what data to include must be done thoughtfully, because representing the same conceptual resource in more than one way defeats the purpose of acquiring a lock. Accordingly, it's generally wise to use a single very generic prefix to ensure that ALL lock keys resolve to the same node, such as `{redlock}my_resource`. This is the most straightforward strategy and may be appropriate when the cluster has additional purposes. However, when locks will always naturally share a common attribute (for example, an organization/tenant ID), this may be used for better key distribution and cluster utilization. You can also acheive ideal utilization by completely omiting a hash tag if you do _not_ need to lock multiple resources at the same time.
+
+### How do I check if something is locked?
+
+The purpose of redlock is to provide exclusivity guarantees on a resource over a duration of time, and is not designed to report the ownership status of a resource. For example, if you are on the smaller side of a network partition you will fail to acquire a lock, but you don't know if the lock exists on the other side; all you know is that you can't guarantee exclusivity on yours. This is further complicated by retry behavior, and even moreso when acquiring a lock on more than one resource.
+
+That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable".
+
+Note that with `retryCount=-1` there will be unlimited retries until the lock is aquired.
+
+### Use in CommonJS projects
+
+Beginning in version 5, this package is published as an ECMAScript module. While this is universally accepted as the format of the future, there remain some quirks when used in CommonJS node applications.
+
+Because it is significantly less cumbersome to import CommonJS modules into an ECMAScript module, consuming applications would ideally migrate to this newer standard. See the Node docs on the topic [here](https://nodejs.org/api/esm.html).
+
+However, this can be a fairly significant undertaking, and redlock can still be used inside a CommonJS project with only small changes:
+
+```js
+const Client = require("ioredis");
+const redisA = new Client({ host: "a.redis.example.com" });
+
+// Loading a module into a commonjs file requires the use of a dynamic import,
+// which returns a promise for the module's exports. Unlike when using static
+// imports, the `redlock` const is now a promise for a redlock instance, rather
+// than an instance itself.
+const redlock = import("redlock").then(({ default: Redlock }) => {
+  return new Redlock([redisA]);
+});
+
+// Make sure to await the instance promise when using it:
+let lock = await (await redlock).acquire(["a"], 5000);
+try {
+  await something();
+} finally {
+  await lock.release();
+}
+```
