@@ -368,7 +368,7 @@ function run(namespace: string, redis: Client | Cluster): void {
 
       const duration = 300;
 
-      await redlock.using(
+      const valueP: Promise<string | null> = redlock.using(
         ["{redlock}x"],
         duration,
         {
@@ -396,6 +396,8 @@ function run(namespace: string, redis: Client | Cluster): void {
           return lockValue;
         }
       );
+
+      await valueP;
 
       t.is(await redis.get("{redlock}x"), null, "The lock was not released.");
     } catch (error) {
