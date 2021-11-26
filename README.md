@@ -125,6 +125,10 @@ Please view the (very concise) source code or TypeScript definitions for a detai
 
 ## Guidance
 
+### Contributing
+
+Please see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for information on developing, running, and testing this library.
+
 ### High-Availability Recommendations
 
 - Use at least 3 independent servers or clusters

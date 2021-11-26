@@ -243,7 +243,8 @@ services:
       - installer
     image: node:16
     working_dir: /workspace
-    command: ./scripts/await.sh node_modules/.bin/tsc yarn build:development
+    entrypoint: ./scripts/await.sh node_modules/.bin/tsc
+    command: yarn build:development
     environment:
       NODE_ENV: development
     volumes:
@@ -255,7 +256,7 @@ services:
         target: /workspace/node_modules
 
   # This container runs the tests.
-  tester:
+  runner:
     depends_on:
       - builder
       - redis-single-instance
@@ -283,7 +284,8 @@ services:
       - redis-multi-cluster-c
     image: node:16
     working_dir: /workspace
-    command: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/index.js yarn test:development
+    entrypoint: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/index.js
+    command: yarn test:development
     environment:
       NODE_ENV: development
     volumes:

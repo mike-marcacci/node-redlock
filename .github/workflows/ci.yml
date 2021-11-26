@@ -8,23 +8,9 @@ on:
 
 jobs:
   test:
-    name: Test with Node.js v${{ matrix.node }} and ${{ matrix.os }}
+    name: Build & Test
     runs-on: "ubuntu-latest"
-    container: "node:${{matrix.node}}"
-    strategy:
-      matrix:
-        node: ["12", "14", "16"]
-    services:
-      redis-single-instance:
-        image: redis
-      redis-multi-instance-a:
-        image: redis
-      redis-multi-instance-b:
-        image: redis
-      redis-multi-instance-c:
-        image: redis
-    env:
-      SKIP_CLUSTER_TESTS: true
+    container: "node:16"
     steps:
       - uses: actions/checkout@v2
       - name: Install dependancies
@@ -34,4 +20,4 @@ jobs:
       - name: Transpile into dist
         run: yarn build
       - name: Run tests
-        run: yarn test
+        run: docker compose run --rm runner yarn test

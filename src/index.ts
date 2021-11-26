@@ -704,6 +704,10 @@ export default class Redlock extends EventEmitter {
         lock = await lock.extend(duration);
         queue();
       } catch (error) {
+        if (!(error instanceof Error)) {
+          throw new Error(`Unexpected thrown ${typeof error}: ${error}.`);
+        }
+
         if (lock.expiration > Date.now()) {
           return (extension = extend());
         }
