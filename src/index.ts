@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 
 // AbortController became available as a global in node version 16. Once version
 // 14 reaches its end-of-life, this can be removed.
-import PolyfillAbortController from "node-abort-controller";
+import { AbortController as PolyfillAbortController } from "node-abort-controller";
 
 import { Redis as IORedisClient, Cluster as IORedisCluster } from "ioredis";
 type Client = IORedisClient | IORedisCluster;
