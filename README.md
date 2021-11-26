@@ -162,4 +162,10 @@ Note that with `retryCount=-1` there will be unlimited retries until the lock is
 
 Beginning in version 5, this package is published as an ECMAScript module. While this is universally accepted as the format of the future, there remain some quirks when used in CommonJS node applications. To provide better erganomics for use in CommonJS projects, this package **also** distributes a CommonJS version. Please ensure that your project either uses the CommonJS or ECMAScript version **but NOT both**.
 
+The `Redlock` class us published as the "default" export, and can be imported with:
+
+```ts
+const { default: Redlock } = require("redlock");
+```
+
 In version 6, this package will stop distributing a CommonJS version.
