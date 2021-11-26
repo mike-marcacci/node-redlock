@@ -3,7 +3,7 @@
     "lib": ["es2020"],
     "target": "es2018",
     "module": "es2020",
-    "outDir": "./dist",
+    "outDir": "./dist/esm",
     "declaration": true,
     "declarationDir": "./dist",
     "moduleResolution": "node",
