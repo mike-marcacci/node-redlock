@@ -10,14 +10,14 @@ jobs:
   test:
     name: Build & Test
     runs-on: "ubuntu-latest"
-    container: "node:16"
     steps:
       - uses: actions/checkout@v2
-      - name: Install dependancies
-        run: yarn install --frozen-lockfile
       - name: Lint the source
-        run: yarn lint
+        run: docker compose run --rm builder yarn lint
       - name: Transpile into dist
-        run: yarn build
+        run: docker compose run --rm builder yarn build
       - name: Run tests
         run: docker compose run --rm runner yarn test
+      - name: Stop containers
+        if: always()
+        run: docker compose down
