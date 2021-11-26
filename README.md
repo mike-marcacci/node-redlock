@@ -111,7 +111,6 @@ const { default: Redlock } = require("redlock");
 
 In version 6, this package will stop distributing the CommonJS version.
 
-
 ## Error Handling
 
 Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation.
