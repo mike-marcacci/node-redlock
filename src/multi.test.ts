@@ -32,7 +32,7 @@ ${(await Promise.all(error.attempts))
 }
 
 async function waitForCluster(redis: Cluster): Promise<void> {
-  async function isReady(): Promise<boolean> {
+  async function checkIsReady(): Promise<boolean> {
     return (
       ((await redis.cluster("info")) as string).match(
         /^cluster_state:(.+)$/m
@@ -40,11 +40,27 @@ async function waitForCluster(redis: Cluster): Promise<void> {
     );
   }
 
-  let ready = await isReady();
-  while (!ready) {
+  let isReady = await checkIsReady();
+  while (!isReady) {
     console.log("Waiting for cluster to be ready...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    ready = await isReady();
+    isReady = await checkIsReady();
+  }
+
+  async function checkIsWritable(): Promise<boolean> {
+    try {
+      return ((await redis.set("isWritable", "true")) as string) === "OK";
+    } catch (error) {
+      console.error(`Cluster unable to receive writes: ${error}`);
+      return false;
+    }
+  }
+
+  let isWritable = await checkIsWritable();
+  while (!isWritable) {
+    console.log("Waiting for cluster to be writable...");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    isWritable = await checkIsWritable();
   }
 }
 

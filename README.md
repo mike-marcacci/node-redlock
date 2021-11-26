@@ -160,29 +160,6 @@ Note that with `retryCount=-1` there will be unlimited retries until the lock is
 
 ### Use in CommonJS projects
 
-Beginning in version 5, this package is published as an ECMAScript module. While this is universally accepted as the format of the future, there remain some quirks when used in CommonJS node applications.
+Beginning in version 5, this package is published as an ECMAScript module. While this is universally accepted as the format of the future, there remain some quirks when used in CommonJS node applications. To provide better erganomics for use in CommonJS projects, this package **also** distributes a CommonJS version. Please ensure that your project either uses the CommonJS or ECMAScript version **but NOT both**.
 
-Because it is significantly less cumbersome to import CommonJS modules into an ECMAScript module, consuming applications would ideally migrate to this newer standard. See the Node docs on the topic [here](https://nodejs.org/api/esm.html).
-
-However, this can be a fairly significant undertaking, and redlock can still be used inside a CommonJS project with only small changes:
-
-```js
-const Client = require("ioredis");
-const redisA = new Client({ host: "a.redis.example.com" });
-
-// Loading a module into a commonjs file requires the use of a dynamic import,
-// which returns a promise for the module's exports. Unlike when using static
-// imports, the `redlock` const is now a promise for a redlock instance, rather
-// than an instance itself.
-const redlock = import("redlock").then(({ default: Redlock }) => {
-  return new Redlock([redisA]);
-});
-
-// Make sure to await the instance promise when using it:
-let lock = await (await redlock).acquire(["a"], 5000);
-try {
-  await something();
-} finally {
-  await lock.release();
-}
-```
+In version 6, this package will stop distributing a CommonJS version.

@@ -21,3 +21,12 @@
 - **BREAKING** Significant API changes; see [README.md](./README.md)
 - **BREAKING** Remove all production dependencies (replacing Bluebird with native promises).
 - **BREAKING** Drop support for Node < 12
+
+## v5.0.0-beta1
+
+- Compile to both ESM and CJS (@ekosz via [#114](https://github.com/mike-marcacci/node-redlock/pull/114/)).
+- Add compatibility with TypeScript 4.4 (@slosd via [#104](https://github.com/mike-marcacci/node-redlock/pull/104)).
+- Use docker compose to test against real clusters in CI (via #101)
+- Add documentation for contributing.
+- Upgrade dependencies.
+- **BREAKING** Change types for "using" helper (@ekosz via [#113](https://github.com/mike-marcacci/node-redlock/pull/114/)).

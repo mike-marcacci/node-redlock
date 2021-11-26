@@ -59,8 +59,8 @@
   "scripts": {
     "format": "prettier --list-different --write '**/*.{json,yml,md,ts}'",
     "lint": "prettier -c '**/*.{json,yml,md,ts}' && eslint src --ext ts",
-    "build": "rm -rf dist && tsc && tsc -p tsconfig.cjs.json && ./tools/fixup",
-    "build:development": "rm -rf dist && tsc --watch",
+    "build": "rm -f dist/**/*.{js,js.map,d.ts} && tsc && tsc -p tsconfig.cjs.json",
+    "build:development": "rm -f dist/**/*.{js,js.map,d.ts} && tsc --watch",
     "test": "cd dist/esm && ava --verbose *.test.js",
     "test:development": "cd dist/esm && ava --verbose --watch *.test.js",
     "prepare": "yarn build",
