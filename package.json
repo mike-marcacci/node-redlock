@@ -28,8 +28,10 @@
   ],
   "files": [
     "dist/index.d.ts",
+    "dist/esm/package.json",
     "dist/esm/index.js",
     "dist/esm/index.js.map",
+    "dist/cjs/package.json",
     "dist/cjs/index.js",
     "dist/cjs/index.js.map"
   ],
@@ -69,6 +71,5 @@
   "dependencies": {
     "node-abort-controller": "^3.0.1"
   },
-  "type": "module",
-  "exports": "./dist/index.js"
+  "type": "module"
 }
