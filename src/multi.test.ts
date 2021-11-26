@@ -31,12 +31,43 @@ ${(await Promise.all(error.attempts))
 `);
 }
 
+async function waitForCluster(redis: Cluster): Promise<void> {
+  async function isReady(): Promise<boolean> {
+    return (
+      ((await redis.cluster("info")) as string).match(
+        /^cluster_state:(.+)$/m
+      )?.[1] === "ok"
+    );
+  }
+
+  let ready = await isReady();
+  while (!ready) {
+    console.log("Waiting for cluster to be ready...");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await isReady();
+  }
+}
+
 function run(
   namespace: string,
   redisA: Client | Cluster,
   redisB: Client | Cluster,
   redisC: Client | Cluster
 ): void {
+  test.before(async () => {
+    await Promise.all([
+      redisA instanceof Cluster && redisA.isCluster
+        ? waitForCluster(redisA)
+        : null,
+      redisB instanceof Cluster && redisB.isCluster
+        ? waitForCluster(redisB)
+        : null,
+      redisC instanceof Cluster && redisC.isCluster
+        ? waitForCluster(redisC)
+        : null,
+    ]);
+  });
+
   test.before(async () => {
     await Promise.all([
       redisA.keys("*").then((keys) => (keys?.length ? redisA.del(keys) : null)),

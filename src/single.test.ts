@@ -31,7 +31,30 @@ ${(await Promise.all(error.attempts))
 `);
 }
 
+async function waitForCluster(redis: Cluster): Promise<void> {
+  async function isReady(): Promise<boolean> {
+    return (
+      ((await redis.cluster("info")) as string).match(
+        /^cluster_state:(.+)$/m
+      )?.[1] === "ok"
+    );
+  }
+
+  let ready = await isReady();
+  while (!ready) {
+    console.log("Waiting for cluster to be ready...");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ready = await isReady();
+  }
+}
+
 function run(namespace: string, redis: Client | Cluster): void {
+  test.before(async () => {
+    await (redis instanceof Cluster && redis.isCluster
+      ? waitForCluster(redis)
+      : null);
+  });
+
   test.before(async () => {
     await redis
       .keys("*")
