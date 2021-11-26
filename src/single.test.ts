@@ -405,13 +405,13 @@ function run(namespace: string, redis: Client | Cluster): void {
     try {
       const redlock = new Redlock([redis]);
 
-      const duration = 300;
+      const duration = 500;
 
       const valueP: Promise<string | null> = redlock.using(
         ["{redlock}x"],
         duration,
         {
-          automaticExtensionThreshold: 100,
+          automaticExtensionThreshold: 200,
         },
         async (signal) => {
           const lockValue = await redis.get("{redlock}x");
@@ -421,7 +421,7 @@ function run(namespace: string, redis: Client | Cluster): void {
           );
 
           // Wait to ensure that the lock is extended
-          await new Promise((resolve) => setTimeout(resolve, 400, undefined));
+          await new Promise((resolve) => setTimeout(resolve, 700, undefined));
 
           t.is(signal.aborted, false, "The signal must not be aborted.");
           t.is(signal.error, undefined, "The signal must not have an error.");
@@ -448,7 +448,7 @@ function run(namespace: string, redis: Client | Cluster): void {
     try {
       const redlock = new Redlock([redis]);
 
-      const duration = 300;
+      const duration = 500;
 
       let locked = false;
       const [lock1, lock2] = await Promise.all([
@@ -456,7 +456,7 @@ function run(namespace: string, redis: Client | Cluster): void {
           ["{redlock}y"],
           duration,
           {
-            automaticExtensionThreshold: 100,
+            automaticExtensionThreshold: 200,
           },
           async (signal) => {
             t.is(locked, false, "The resource must not already be locked.");
@@ -469,7 +469,7 @@ function run(namespace: string, redis: Client | Cluster): void {
             );
 
             // Wait to ensure that the lock is extended
-            await new Promise((resolve) => setTimeout(resolve, 400, undefined));
+            await new Promise((resolve) => setTimeout(resolve, 700, undefined));
 
             t.is(signal.error, undefined, "The signal must not have an error.");
             t.is(signal.aborted, false, "The signal must not be aborted.");
@@ -488,7 +488,7 @@ function run(namespace: string, redis: Client | Cluster): void {
           ["{redlock}y"],
           duration,
           {
-            automaticExtensionThreshold: 100,
+            automaticExtensionThreshold: 200,
           },
           async (signal) => {
             t.is(locked, false, "The resource must not already be locked.");
@@ -501,7 +501,7 @@ function run(namespace: string, redis: Client | Cluster): void {
             );
 
             // Wait to ensure that the lock is extended
-            await new Promise((resolve) => setTimeout(resolve, 400, undefined));
+            await new Promise((resolve) => setTimeout(resolve, 700, undefined));
 
             t.is(signal.error, undefined, "The signal must not have an error.");
             t.is(signal.aborted, false, "The signal must not be aborted.");
