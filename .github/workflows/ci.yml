@@ -17,7 +17,7 @@ jobs:
       - name: Transpile into dist
         run: docker compose run --rm builder yarn build
       - name: Run tests
-        run: docker compose run --rm runner yarn test
+        run: docker compose run --rm runner ./scripts/sleep.sh 5 yarn test
       - name: Stop containers
         if: always()
         run: docker compose down
