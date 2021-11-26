@@ -99,6 +99,19 @@ try {
 }
 ```
 
+### Use in CommonJS Projects
+
+Beginning in version 5, this package is published primarily as an ECMAScript module. While this is universally accepted as the format of the future, there remain some interoperability quirks when used in CommonJS node applications. For major version 5, this package **also** distributes a copy transpiled to CommonJS. Please ensure that your project either uses either the ECMAScript or CommonJS version **but NOT both**.
+
+The `Redlock` class is published as the "default" export, and can be imported with:
+
+```ts
+const { default: Redlock } = require("redlock");
+```
+
+In version 6, this package will stop distributing the CommonJS version.
+
+
 ## Error Handling
 
 Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation.
@@ -157,15 +170,3 @@ The purpose of redlock is to provide exclusivity guarantees on a resource over a
 That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable".
 
 Note that with `retryCount=-1` there will be unlimited retries until the lock is aquired.
-
-### Use in CommonJS projects
-
-Beginning in version 5, this package is published as an ECMAScript module. While this is universally accepted as the format of the future, there remain some quirks when used in CommonJS node applications. To provide better erganomics for use in CommonJS projects, this package **also** distributes a CommonJS version. Please ensure that your project either uses the CommonJS or ECMAScript version **but NOT both**.
-
-The `Redlock` class us published as the "default" export, and can be imported with:
-
-```ts
-const { default: Redlock } = require("redlock");
-```
-
-In version 6, this package will stop distributing a CommonJS version.
