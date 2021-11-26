@@ -46,6 +46,9 @@ async function waitForCluster(redis: Cluster): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     ready = await isReady();
   }
+
+  // Wait an extra 10 seconds..
+  await new Promise((resolve) => setTimeout(resolve, 10000));
 }
 
 function run(namespace: string, redis: Client | Cluster): void {
