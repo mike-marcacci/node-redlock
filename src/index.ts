@@ -428,7 +428,7 @@ export default class Redlock extends EventEmitter {
 
       attempts.push(stats);
 
-      // The operation acheived a quorum in favor.
+      // The operation achieved a quorum in favor.
       if (vote === "for") {
         return { attempts };
       }
@@ -448,7 +448,7 @@ export default class Redlock extends EventEmitter {
         });
       } else {
         throw new ExecutionError(
-          "The operation was unable to acheive a quorum during its retry window.",
+          "The operation was unable to achieve a quorum during its retry window.",
           attempts
         );
       }
