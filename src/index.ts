@@ -91,13 +91,15 @@ export type ExecutionResult = {
 };
 
 /**
- *
+ * Settings for configuring Redlock behaviour. Note that `retryStrategy`
+ * takes priority over `retryCount` and `retryDelay` is passed.
  */
 export interface Settings {
   readonly driftFactor: number;
   readonly retryCount: number;
   readonly retryDelay: number;
   readonly retryJitter: number;
+  readonly retryStrategy?: RetryStrategy;
   readonly automaticExtensionThreshold: number;
 }
 
@@ -135,6 +137,15 @@ export class ExecutionError extends Error {
     super();
     this.name = "ExecutionError";
   }
+}
+
+/**
+ * Interface for defining custom retry strategy in case you want more complex
+ * back off.
+ */
+export interface RetryStrategy {
+  getRetryCount: () => number;
+  getRetryDelay: (attempNumber: number) => number;
 }
 
 /*
@@ -420,7 +431,7 @@ export default class Redlock extends EventEmitter {
         }
       : this.settings;
 
-    const maxAttempts = settings.retryCount + 1;
+    const maxAttempts = this.getRetryCount() + 1;
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
@@ -440,7 +451,7 @@ export default class Redlock extends EventEmitter {
             resolve,
             Math.max(
               0,
-              settings.retryDelay +
+              this.getRetryDelay(attempts.length) +
                 Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
             ),
             undefined
@@ -743,5 +754,140 @@ export default class Redlock extends EventEmitter {
 
       await lock.release();
     }
+  }
+
+  private getRetryCount(): number {
+    return this.settings.retryStrategy
+      ? this.settings.retryStrategy.getRetryCount()
+      : this.settings.retryCount;
+  }
+
+  private getRetryDelay(attempNumber: number): number {
+    return this.settings.retryStrategy
+      ? this.settings.retryStrategy.getRetryDelay(attempNumber)
+      : this.settings.retryDelay;
+  }
+}
+
+/**
+ * Trivial retry strategy where you can define arbitrary delay numbers.
+ * Best to be used as internal implementation for more complex delays.
+ */
+export class StaticRetryStrategy implements RetryStrategy {
+  constructor(private readonly delays: Array<number>) {}
+  getRetryCount(): number {
+    return this.delays.length;
+  }
+  getRetryDelay(attempNumber: number): number {
+    const retryCount = this.delays.length;
+    if (retryCount > 1 && retryCount <= attempNumber) {
+      return this.delays[attempNumber - 1] as number;
+    }
+    throw new Error(
+      `Unexpected retry attempt ${attempNumber} is larger than expected retry count ${retryCount}`
+    );
+  }
+}
+
+export interface ExponentialRetryStrategySettings {
+  readonly startDelay: number;
+  readonly expStartCount: number;
+  readonly expFactor: number;
+  readonly maxDelay: number;
+  readonly maxSumDelay: number;
+  readonly maxRetryCount: number;
+}
+
+// Define default settings.
+const defaultExponentialDelayStratedySettings: Readonly<ExponentialRetryStrategySettings> =
+  {
+    startDelay: defaultSettings.retryDelay,
+    expStartCount: 1,
+    expFactor: 2,
+    maxDelay: Infinity,
+    maxSumDelay: Infinity,
+    maxRetryCount: defaultSettings.retryCount,
+  };
+
+// Modifyng this object is forbidden.
+Object.freeze(defaultExponentialDelayStratedySettings);
+
+/**
+ * Configurable exponential retry strategy.
+ *
+ * Starts with `startDelay`, at first `expStartCount` retries are done with
+ * `startDelay`, then from `expStartCount + 1` starts to multiply delay by
+ * `expFactor` until it reaches `maxDelay`. Retrying stops once `maxSumDelay`
+ * or `maxRetryCount` is reached, whatever happens first.
+ *
+ * Note that `maxSumDelay` does not include locking time, only pure delay time.
+ * So it's more an estimate.
+ */
+export class ExponentialDelayStrategy implements RetryStrategy {
+  readonly delays: StaticRetryStrategy;
+  constructor(settings: Partial<ExponentialRetryStrategySettings> = {}) {
+    const extSettings: ExponentialRetryStrategySettings = {
+      startDelay:
+        typeof settings.startDelay === "number"
+          ? settings.startDelay
+          : defaultExponentialDelayStratedySettings.startDelay,
+      expStartCount:
+        typeof settings.expStartCount === "number"
+          ? settings.expStartCount
+          : defaultExponentialDelayStratedySettings.expStartCount,
+      expFactor:
+        typeof settings.expFactor === "number"
+          ? settings.expFactor
+          : defaultExponentialDelayStratedySettings.expFactor,
+      maxDelay:
+        typeof settings.maxDelay === "number"
+          ? settings.maxDelay
+          : defaultExponentialDelayStratedySettings.maxDelay,
+      maxSumDelay:
+        typeof settings.maxSumDelay === "number"
+          ? settings.maxSumDelay
+          : defaultExponentialDelayStratedySettings.maxSumDelay,
+      maxRetryCount:
+        typeof settings.maxRetryCount === "number"
+          ? settings.maxRetryCount
+          : defaultExponentialDelayStratedySettings.maxRetryCount,
+    };
+    this.delays = new StaticRetryStrategy(
+      ExponentialDelayStrategy.calculateDelays(extSettings)
+    );
+  }
+
+  private static calculateDelays(
+    settings: ExponentialRetryStrategySettings
+  ): Array<number> {
+    const {
+      startDelay,
+      expStartCount,
+      expFactor,
+      maxDelay,
+      maxRetryCount,
+      maxSumDelay,
+    } = settings;
+    let lastDelay = startDelay;
+    let sumDelay = startDelay;
+    const delays: Array<number> = [lastDelay];
+
+    while (sumDelay < maxSumDelay && delays.length < maxRetryCount) {
+      if (delays.length > expStartCount) {
+        lastDelay *= expFactor;
+      }
+      lastDelay = Math.min(lastDelay, maxDelay, maxSumDelay - sumDelay);
+      sumDelay += lastDelay;
+      delays.push(lastDelay);
+    }
+
+    return delays;
+  }
+
+  getRetryCount(): number {
+    return this.delays.getRetryCount();
+  }
+  getRetryDelay(attempNumber: number): number {
+    return this.getRetryDelay(attempNumber);
   }
 }
