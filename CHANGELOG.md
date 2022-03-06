@@ -31,7 +31,7 @@
 - Upgrade dependencies.
 - **BREAKING** Change types for "using" helper (@ekosz via [#113](https://github.com/mike-marcacci/node-redlock/pull/114/)).
 
-## v5.0.0
+## v5.0.0-beta2
 
 - Fix regression of retryCount: -1. (fixes #149)
 - Export RedlockAbortSignal type. (fixes #138)
