@@ -90,7 +90,7 @@ try {
   // Do something...
   await something();
 
-  // Extend the lock.
+  // Extend the lock. Note that this returns a new `Lock` instance.
   lock = await lock.extend(5000);
 
   // Do something else...
