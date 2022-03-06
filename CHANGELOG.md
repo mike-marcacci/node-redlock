@@ -15,14 +15,14 @@
 - Update docs (@ricmatsui via [#80](https://github.com/mike-marcacci/node-redlock/pull/80)).
 - Use evalsha for scripts (@yosiat via [#77](https://github.com/mike-marcacci/node-redlock/pull/77)).
 
-## v5.0.0-alpha1
+## v5.0.0-alpha.1
 
 - Complete rewrite using TypeScript.
 - **BREAKING** Significant API changes; see [README.md](./README.md)
 - **BREAKING** Remove all production dependencies (replacing Bluebird with native promises).
 - **BREAKING** Drop support for Node < 12
 
-## v5.0.0-beta1
+## v5.0.0-beta.1
 
 - Compile to both ESM and CJS (@ekosz via [#114](https://github.com/mike-marcacci/node-redlock/pull/114/)).
 - Add compatibility with TypeScript 4.4 (@slosd via [#104](https://github.com/mike-marcacci/node-redlock/pull/104)).
@@ -31,7 +31,7 @@
 - Upgrade dependencies.
 - **BREAKING** Change types for "using" helper (@ekosz via [#113](https://github.com/mike-marcacci/node-redlock/pull/114/)).
 
-## v5.0.0-beta2
+## v5.0.0-beta.2
 
 - Fix regression of retryCount: -1. (fixes #149)
 - Export RedlockAbortSignal type. (fixes #138)
