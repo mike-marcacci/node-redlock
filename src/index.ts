@@ -420,7 +420,11 @@ export default class Redlock extends EventEmitter {
         }
       : this.settings;
 
-    const maxAttempts = settings.retryCount + 1;
+    // For the purpose of easy config serialization, we treat a retryCount of
+    // -1 a equivalent to Infinity.
+    const maxAttempts =
+      settings.retryCount === -1 ? Infinity : settings.retryCount + 1;
+
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
