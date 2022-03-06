@@ -13,19 +13,19 @@ networks:
 services:
   # Single standalone instance. (NOT highly available, correct)
   redis-single-instance:
-    image: redis
+    image: redis:6
 
   # Multiple standalone instances. (highly availability, correct)
   redis-multi-instance-a:
-    image: redis
+    image: redis:6
   redis-multi-instance-b:
-    image: redis
+    image: redis:6
   redis-multi-instance-c:
-    image: redis
+    image: redis:6
 
   # Single cluster. (highly availability, potentially incorrect)
   redis-single-cluster-1:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -35,7 +35,7 @@ services:
       redis:
         ipv4_address: 10.0.0.11
   redis-single-cluster-2:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -45,7 +45,7 @@ services:
       redis:
         ipv4_address: 10.0.0.12
   redis-single-cluster-3:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -55,7 +55,7 @@ services:
       redis:
         ipv4_address: 10.0.0.13
   redis-single-cluster-4:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -65,7 +65,7 @@ services:
       redis:
         ipv4_address: 10.0.0.14
   redis-single-cluster-5:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -75,7 +75,7 @@ services:
       redis:
         ipv4_address: 10.0.0.15
   redis-single-cluster-6:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -85,7 +85,7 @@ services:
       redis:
         ipv4_address: 10.0.0.16
   redis-single-cluster:
-    image: redis
+    image: redis:6
     command: redis-cli -p 6379 --cluster create 10.0.0.11:6379 10.0.0.12:6379 10.0.0.13:6379 10.0.0.14:6379 10.0.0.14:6379 10.0.0.16:6379 --cluster-replicas 1 --cluster-yes
     depends_on:
       - redis-single-cluster-1
@@ -100,7 +100,7 @@ services:
 
   # Multi cluster. (highly availability, correct, probably excessive)
   redis-multi-cluster-a-1:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -110,7 +110,7 @@ services:
       redis:
         ipv4_address: 10.0.1.11
   redis-multi-cluster-a-2:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -120,7 +120,7 @@ services:
       redis:
         ipv4_address: 10.0.1.12
   redis-multi-cluster-a-3:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -130,7 +130,7 @@ services:
       redis:
         ipv4_address: 10.0.1.13
   redis-multi-cluster-a:
-    image: redis
+    image: redis:6
     command: redis-cli -p 6379 --cluster create 10.0.1.11:6379 10.0.1.12:6379 10.0.1.13:6379 --cluster-replicas 0 --cluster-yes
     depends_on:
       - redis-multi-cluster-a-1
@@ -141,7 +141,7 @@ services:
         ipv4_address: 10.0.1.2
 
   redis-multi-cluster-b-1:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -151,7 +151,7 @@ services:
       redis:
         ipv4_address: 10.0.2.11
   redis-multi-cluster-b-2:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -161,7 +161,7 @@ services:
       redis:
         ipv4_address: 10.0.2.12
   redis-multi-cluster-b-3:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -171,7 +171,7 @@ services:
       redis:
         ipv4_address: 10.0.2.13
   redis-multi-cluster-b:
-    image: redis
+    image: redis:6
     command: redis-cli -p 6379 --cluster create 10.0.2.11:6379 10.0.2.12:6379 10.0.2.13:6379 --cluster-replicas 0 --cluster-yes
     depends_on:
       - redis-multi-cluster-b-1
@@ -182,7 +182,7 @@ services:
         ipv4_address: 10.0.2.2
 
   redis-multi-cluster-c-1:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -192,7 +192,7 @@ services:
       redis:
         ipv4_address: 10.0.3.11
   redis-multi-cluster-c-2:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -202,7 +202,7 @@ services:
       redis:
         ipv4_address: 10.0.3.12
   redis-multi-cluster-c-3:
-    image: redis
+    image: redis:6
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
@@ -212,7 +212,7 @@ services:
       redis:
         ipv4_address: 10.0.3.13
   redis-multi-cluster-c:
-    image: redis
+    image: redis:6
     command: redis-cli -p 6379 --cluster create 10.0.3.11:6379 10.0.3.12:6379 10.0.3.13:6379 --cluster-replicas 0 --cluster-yes
     depends_on:
       - redis-multi-cluster-c-1
