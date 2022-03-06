@@ -160,7 +160,7 @@ export class Lock {
   }
 }
 
-type RedlockAbortSignal = AbortSignal & { error?: Error };
+export type RedlockAbortSignal = AbortSignal & { error?: Error };
 
 /**
  * A redlock object is instantiated with an array of at least one redis client
@@ -298,6 +298,10 @@ export default class Redlock extends EventEmitter {
     duration: number,
     settings?: Partial<Settings>
   ): Promise<Lock> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const start = Date.now();
     const value = this._random();
 
@@ -367,6 +371,10 @@ export default class Redlock extends EventEmitter {
     duration: number,
     settings?: Partial<Settings>
   ): Promise<Lock> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const start = Date.now();
 
     // The lock has already expired.
@@ -420,7 +428,11 @@ export default class Redlock extends EventEmitter {
         }
       : this.settings;
 
-    const maxAttempts = settings.retryCount + 1;
+    // For the purpose of easy config serialization, we treat a retryCount of
+    // -1 a equivalent to Infinity.
+    const maxAttempts =
+      settings.retryCount === -1 ? Infinity : settings.retryCount + 1;
+
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
@@ -661,6 +673,10 @@ export default class Redlock extends EventEmitter {
       | ((signal: RedlockAbortSignal) => Promise<T>),
     optionalRoutine?: (signal: RedlockAbortSignal) => Promise<T>
   ): Promise<T> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const settings =
       settingsOrRoutine && typeof settingsOrRoutine !== "function"
         ? {

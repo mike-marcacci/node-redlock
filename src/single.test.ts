@@ -77,6 +77,24 @@ function run(namespace: string, redis: Client | Cluster): void {
       .then((keys) => (keys?.length ? redis.del(keys) : null));
   });
 
+  test(`${namespace} - refuses to use a non-integer duration`, async (t) => {
+    try {
+      const redlock = new Redlock([redis]);
+
+      const duration = Number.MAX_SAFE_INTEGER / 10;
+
+      // Acquire a lock.
+      await redlock.acquire(["{redlock}float"], duration);
+
+      t.fail("Expected the function to throw.");
+    } catch (error) {
+      t.is(
+        (error as Error).message,
+        "Duration must be an integer value in milliseconds."
+      );
+    }
+  });
+
   test(`${namespace} - acquires, extends, and releases a single lock`, async (t) => {
     try {
       const redlock = new Redlock([redis]);
