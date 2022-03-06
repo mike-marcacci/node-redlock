@@ -160,7 +160,7 @@ export class Lock {
   }
 }
 
-type RedlockAbortSignal = AbortSignal & { error?: Error };
+export type RedlockAbortSignal = AbortSignal & { error?: Error };
 
 /**
  * A redlock object is instantiated with an array of at least one redis client
