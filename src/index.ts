@@ -298,6 +298,10 @@ export default class Redlock extends EventEmitter {
     duration: number,
     settings?: Partial<Settings>
   ): Promise<Lock> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const start = Date.now();
     const value = this._random();
 
@@ -367,6 +371,10 @@ export default class Redlock extends EventEmitter {
     duration: number,
     settings?: Partial<Settings>
   ): Promise<Lock> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const start = Date.now();
 
     // The lock has already expired.
@@ -665,6 +673,10 @@ export default class Redlock extends EventEmitter {
       | ((signal: RedlockAbortSignal) => Promise<T>),
     optionalRoutine?: (signal: RedlockAbortSignal) => Promise<T>
   ): Promise<T> {
+    if (Math.floor(duration) !== duration) {
+      throw new Error("Duration must be an integer value in milliseconds.");
+    }
+
     const settings =
       settingsOrRoutine && typeof settingsOrRoutine !== "function"
         ? {
