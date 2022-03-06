@@ -83,8 +83,6 @@ function run(namespace: string, redis: Client | Cluster): void {
 
       const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
 
-      throw new Error("This will fail.");
-
       // Acquire a lock.
       let lock = await redlock.acquire(["{redlock}a"], duration);
       t.is(
