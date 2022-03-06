@@ -1,6 +1,6 @@
 {
   "name": "redlock",
-  "version": "5.0.0-beta.1",
+  "version": "v5.0.0-beta2",
   "description": "A node.js redlock implementation for distributed redis locks",
   "license": "MIT",
   "author": {
