@@ -302,7 +302,6 @@ export default class Redlock extends EventEmitter {
       throw new Error("Duration must be an integer value in milliseconds.");
     }
 
-    const start = Date.now();
     const value = this._random();
 
     try {
@@ -312,6 +311,8 @@ export default class Redlock extends EventEmitter {
         [value, duration],
         settings
       );
+
+      const start = Date.now();
 
       // Add 2 milliseconds to the drift to account for Redis expires precision,
       // which is 1 ms, plus the configured allowable drift factor.
