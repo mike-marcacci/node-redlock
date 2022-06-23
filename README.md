@@ -1,48 +1,43 @@
-[![Continuous Integration](https://github.com/mike-marcacci/node-redlock/workflows/Continuous%20Integration/badge.svg)](https://github.com/mike-marcacci/node-redlock/actions/workflows/ci.yml?query=branch%3Amain++)
-[![Current Version](https://badgen.net/npm/v/redlock)](https://npm.im/redlock)
-[![Supported Node.js Versions](https://badgen.net/npm/node/redlock)](https://npm.im/redlock)
+# Deno-Redlock
 
-# Redlock
+## Description
+This is an implementation of the Redlock algorithm in Deno. It is a secure, lightweight solution to control resource access in distributed systems architecture.
 
-This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
-
-- [Installation](#installation)
-- [Usage](#usage)
-- [Error Handling](#error-handling)
-- [API](#api)
-- [Guidance](#guidance)
+> Distributed locks are a very useful primitive in many environments where different processes require to operate  with shared resources in a mutually exclusive way.
+>
+> There are a number of libraries and blog posts describing how to implement a DLM (Distributed Lock Manager) with Redis, but every library uses a different approach, and many use a simple approach with lower guarantees compared to what can be achieved with slightly more complex designs.
+> 
+> https://redis.io/docs/reference/patterns/distributed-locks/
 
 ## Installation
+import Redlock from "https://deno.land/x/redlock/mod.ts"
 
-```bash
-npm install --save redlock
-```
+## Documentation
+[Deno DLM](https://denodlm.com/)
 
 ## Configuration
 
-Redlock is designed to use [ioredis](https://github.com/luin/ioredis) to keep its client connections and handle the cluster protocols.
-
-A redlock object is instantiated with an array of at least one redis client and an optional `options` object. Properties of the Redlock object should NOT be changed after it is first used, as doing so could have unintended consequences for live locks.
+Instantiate a Redlock object by passing an array of at least one Redis client (for storing lock data) and an optional `options` object.
+Do NOT change properties of the Redlock object after instantiation. Doing so could have unintended consequences on live locks.
 
 ```ts
-import Client from "ioredis";
-import Redlock from "./redlock";
+import { connect } from "https://deno.land/x/redis/mod.ts"
+import Redlock from "https://deno.land/x/redlock/mod.ts"
 
-const redisA = new Client({ host: "a.redis.example.com" });
-const redisB = new Client({ host: "b.redis.example.com" });
-const redisC = new Client({ host: "c.redis.example.com" });
+const redisA = await connect({hostname: "HostIpAddress", port: portNumber})
+const redisB = await connect({hostname: "HostIpAddress", port: portNumber})
+const redisC = await connect({hostname: "HostIpAddress", port: portNumber})
 
 const redlock = new Redlock(
-  // You should have one client for each independent redis node
-  // or cluster.
+  // One client per each independent Redis node/cluster
   [redisA, redisB, redisC],
   {
     // The expected clock drift; for more details see:
     // http://redis.io/topics/distlock
-    driftFactor: 0.01, // multiplied by lock ttl to determine drift time
+    driftFactor: 0.01, // multiplied by lock time to live to determine drift time
 
-    // The max number of times Redlock will attempt to lock a resource
-    // before erroring.
+    // The max number of times Redlock will attempt to lock a resource before erroring
+    // setting retryCount: -1 allows for unlimited retries until the lock is acquired
     retryCount: 10,
 
     // the time in ms between attempts
@@ -59,115 +54,99 @@ const redlock = new Redlock(
   }
 );
 ```
+Additionally, the Lua scripts used to acquire, extend, and release the locks may be customized on Redlock instantiation. Please view the source code if required.
 
-## Usage
+## Lock Usage
 
-The `using` method wraps and executes a routine in the context of an auto-extending lock, returning a promise of the routine's value. In the case that auto-extension fails, an AbortSignal will be updated to indicate that abortion of the routine is in order, and to pass along the encountered error.
+The `using` method allows a routine to be executed within the context of an auto-extending lock. This method returns a promise that resolves to the routine's value. If the auto-extension fails, then the routine is aborted through the use of an AbortSignal. 
 
-The first parameter is an array of resources to lock; the second is the requested lock duration in milliseconds, which MUST NOT contain values after the decimal.
+The first parameter represents an array of resources that one wishes to lock. The second parameter is the desired lock duration in milliseconds (given as an integer).
 
 ```ts
-await redlock.using([senderId, recipientId], 5000, async (signal) => {
-  // Do something...
-  await something();
+await redlock.using(["{redlock}resourceId", "{redlock}resourceId2"], 10000, async (signal) => {
+  // perform some action using the locked resources...
+  const resource = await getResource(resourceId);
+  const resource2 = await getResource(resourceId2);
 
-  // Make sure any attempted lock extension has not failed.
+  // The abort signal will be true if:
+  // 1. the above took long enough that the lock needed to be extended
+  // 2. redlock was unable to extend the lock
+  //
+  // In such a case, exclusivity can no longer be guaranteed for further operations
+  // and should be handled as an exceptional case.
   if (signal.aborted) {
     throw signal.error;
   }
 
-  // Do something else...
-  await somethingElse();
+  // perform other actions with the resources...
+  await updateResources([
+    {id: resourceId, resource: updatedResource},
+    {id: resourceId2, resource: updatedResource2},
+  ]);
 });
 ```
 
-Alternatively, locks can be acquired and released directly:
+Locks can also be acquired, extended, and released manually
 
 ```ts
-// Acquire a lock.
-let lock = await redlock.acquire(["a"], 5000);
+// acquisition
+let lock = await redlock.acquire(["exampleResourceId"], 10000);
 try {
-  // Do something...
-  await something();
+  // perform some action with locked resource...
+  await action();
 
-  // Extend the lock. Note that this returns a new `Lock` instance.
-  lock = await lock.extend(5000);
+  // extension, which instantiates a new Lock
+  lock = await lock.extend(10000);
 
-  // Do something else...
-  await somethingElse();
+  // perform another action...
+  await anotherAction();
 } finally {
-  // Release the lock.
+  // release
   await lock.release();
 }
 ```
 
-### Use in CommonJS Projects
-
-Beginning in version 5, this package is published primarily as an ECMAScript module. While this is universally accepted as the format of the future, there remain some interoperability quirks when used in CommonJS node applications. For major version 5, this package **also** distributes a copy transpiled to CommonJS. Please ensure that your project either uses either the ECMAScript or CommonJS version **but NOT both**.
-
-The `Redlock` class is published as the "default" export, and can be imported with:
-
-```ts
-const { default: Redlock } = require("redlock");
-```
-
-In version 6, this package will stop distributing the CommonJS version.
+Note: commands are executed in a single call to Redis. Redis clusters require that all keys in a command must hash to the same node. When acquiring a lock on multiple resources while using Redis clusters, [redis hash tags](https://redis.io/docs/reference/cluster-spec/) must be used to ensure that all keys are allocated in the same hash slot. The most straightforward strategy is to use a single generic prefix inside hash tags before listing the resource, such as `{redlock}resourceId`. This ensures that all lock keys resolve to the same node and may be appropriate when the cluster storing the lock data has additional purposes. When all resources share a common attribute (such as organizationId), this attribute can be used inside the hash tags for better key distribution and cluster utilization. If you do not need to lock multiple resources at the same time or are not using clusters, omit the hash tags to achieve ideal utilization.
 
 ## Error Handling
-
-Because redlock is designed for high availability, it does not care if a minority of redis instances/clusters fail at an operation.
-
-However, it can be helpful to monitor and log such cases. Redlock emits an "error" event whenever it encounters an error, even if the error is ignored in its normal operation.
+Redlock is designed for high availability and doesn't care if a minority of Redis instances/clusters fail at an operation. However, it may be helpful to monitor or log normal usage errors. A per-attempt and per-client stats object (including errors) is made available on the `attempts` property of both the `Lock` and `ExecutionError` classes. Additionally, Redlock emits an "error" event whenever an error is encountered, even if the error is ignored and normal operation continues.
 
 ```ts
 redlock.on("error", (error) => {
-  // Ignore cases where a resource is explicitly marked as locked on a client.
+  // Ignore cases where a resource is explicitly marked as locked on a client
   if (error instanceof ResourceLockedError) {
     return;
   }
-
-  // Log all other errors.
+  
+  // Log all other errors
   console.error(error);
 });
 ```
 
-Additionally, a per-attempt and per-client stats (including errors) are made available on the `attempt` propert of both `Lock` and `ExecutionError` classes.
+## Disclaimer
 
-## API
+This code implements an algorithm which is currently a proposal and was not formally analyzed. Make sure to understand how it works before using it in your production environments.
 
-Please view the (very concise) source code or TypeScript definitions for a detailed breakdown of the API.
+See Martin Kleppmann's [analysis](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) and Salvatore Sanfilippo's [counterpoint](http://antirez.com/news/101) to this analysis.
 
-## Guidance
 
-### Contributing
+#### A note about time:
+Redis and Deno-Redlock utilize a monotonic time API to prevent errors due to random time jumps that are possible with a poorly maintained GPS time API.
 
-Please see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for information on developing, running, and testing this library.
+## The Development Team
+- Cody Schexnider [LinkedIn](https://www.linkedin.com/in/cody-schexnider-2402701a3/) [GitHub](https://github.com/cdschexnide)
+- Michael Watson [LinkedIn](https://www.linkedin.com/in/mdwatson988/) [GitHub](https://github.com/mdwatson988)
+- Jiayi Zhang [LinkedIn](https://www.linkedin.com/in/jiayi-zhang-87819173/) [GitHub](https://github.com/onlinezyc)
+- Anna Shen [LinkedIn](https://www.linkedin.com/in/ashen0426/) [GitHub](https://github.com/ashen0426)
 
-### High-Availability Recommendations
+## Contributing
 
-- Use at least 3 independent servers or clusters
-- Use an odd number of independent redis **_servers_** for most installations
-- Use an odd number of independent redis **_clusters_** for massive installations
-- When possible, distribute redis nodes across different physical machines
+1. [Fork it](https://github.com/oslabs-beta/Deno-Redlock)
+2. Create your feature branch (`git checkout -b your-new-feature`)
+3. Commit your changes (`git commit -am 'feature-added'`)
+4. Push to the branch (`git push origin your-new-feature`)
+5. Create a new Pull Request
 
-### Using Cluster/Sentinel
 
-**_Please make sure to use a client with built-in cluster support, such as [ioredis](https://github.com/luin/ioredis)._**
-
-It is completely possible to use a _single_ redis cluster or sentinal configuration by passing one preconfigured client to redlock. While you do gain high availability and vastly increased throughput under this scheme, the failure modes are a bit different, and it becomes theoretically possible that a lock is acquired twice:
-
-Assume you are using eventually-consistent redis replication, and you acquire a lock for a resource. Immediately after acquiring your lock, the redis master for that shard crashes. Redis does its thing and fails over to the slave which hasn't yet synced your lock. If another process attempts to acquire a lock for the same resource, it will succeed!
-
-This is why redlock allows you to specify multiple independent nodes/clusters: by requiring consensus between them, we can safely take out or fail-over a minority of nodes without invalidating active locks.
-
-To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
-
-Also note that when acquiring a lock on multiple resources, commands are executed in a single call to redis. Redis clusters require that all keys exist in a command belong to the same node. **If you are using a redis cluster or clusters and need to lock multiple resources together you MUST use [redis hash tags](https://redis.io/topics/cluster-spec#keys-hash-tags) (ie. use `ignored{considered}ignored{ignored}` notation in resource strings) to ensure that all keys resolve to the same node.** Chosing what data to include must be done thoughtfully, because representing the same conceptual resource in more than one way defeats the purpose of acquiring a lock. Accordingly, it's generally wise to use a single very generic prefix to ensure that ALL lock keys resolve to the same node, such as `{redlock}my_resource`. This is the most straightforward strategy and may be appropriate when the cluster has additional purposes. However, when locks will always naturally share a common attribute (for example, an organization/tenant ID), this may be used for better key distribution and cluster utilization. You can also acheive ideal utilization by completely omiting a hash tag if you do _not_ need to lock multiple resources at the same time.
-
-### How do I check if something is locked?
-
-The purpose of redlock is to provide exclusivity guarantees on a resource over a duration of time, and is not designed to report the ownership status of a resource. For example, if you are on the smaller side of a network partition you will fail to acquire a lock, but you don't know if the lock exists on the other side; all you know is that you can't guarantee exclusivity on yours. This is further complicated by retry behavior, and even moreso when acquiring a lock on more than one resource.
-
-That said, for many tasks it's sufficient to attempt a lock with `retryCount=0`, and treat a failure as the resource being "locked" or (more correctly) "unavailable".
-
-Note that with `retryCount=-1` there will be unlimited retries until the lock is aquired.
+## Credit
+Big thanks to [Mike Marcacci](https://github.com/mike-marcacci) for the [Node.js implementation](https://github.com/mike-marcacci/node-redlock) of the Redlock algorithm.

@@ -1,8 +1,0 @@
-{
-  "overrides": [
-    {
-      "files": ".ts",
-      "options": { "parser": "typescript" }
-    }
-  ]
-}

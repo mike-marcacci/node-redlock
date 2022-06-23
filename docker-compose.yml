@@ -1,7 +1,7 @@
-version: "3.7"
+version: "3.8"
 
 volumes:
-  node_modules:
+  deno_cache:
 
 networks:
   redis:
@@ -11,81 +11,71 @@ networks:
         - subnet: 10.0.0.0/16
 
 services:
-  # Single standalone instance. (NOT highly available, correct)
   redis-single-instance:
-    image: redis:6
+    image: redis
 
-  # Multiple standalone instances. (highly availability, correct)
-  redis-multi-instance-a:
-    image: redis:6
-  redis-multi-instance-b:
-    image: redis:6
-  redis-multi-instance-c:
-    image: redis:6
-
-  # Single cluster. (highly availability, potentially incorrect)
   redis-single-cluster-1:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.11
   redis-single-cluster-2:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.12
   redis-single-cluster-3:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.13
   redis-single-cluster-4:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.14
   redis-single-cluster-5:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.15
   redis-single-cluster-6:
-    image: redis:6
+    image: redis
     command: redis-server /etc/redis/redis.conf
     volumes:
       - type: bind
-        source: ./cluster.redis.conf
+        source: ./test/cluster.redis.conf
         target: /etc/redis/redis.conf
     networks:
       redis:
         ipv4_address: 10.0.0.16
   redis-single-cluster:
-    image: redis:6
+    image: redis
     command: redis-cli -p 6379 --cluster create 10.0.0.11:6379 10.0.0.12:6379 10.0.0.13:6379 10.0.0.14:6379 10.0.0.14:6379 10.0.0.16:6379 --cluster-replicas 1 --cluster-yes
     depends_on:
       - redis-single-cluster-1
@@ -98,172 +88,35 @@ services:
       redis:
         ipv4_address: 10.0.0.2
 
-  # Multi cluster. (highly availability, correct, probably excessive)
-  redis-multi-cluster-a-1:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.1.11
-  redis-multi-cluster-a-2:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.1.12
-  redis-multi-cluster-a-3:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.1.13
-  redis-multi-cluster-a:
-    image: redis:6
-    command: redis-cli -p 6379 --cluster create 10.0.1.11:6379 10.0.1.12:6379 10.0.1.13:6379 --cluster-replicas 0 --cluster-yes
-    depends_on:
-      - redis-multi-cluster-a-1
-      - redis-multi-cluster-a-2
-      - redis-multi-cluster-a-3
-    networks:
-      redis:
-        ipv4_address: 10.0.1.2
-
-  redis-multi-cluster-b-1:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.2.11
-  redis-multi-cluster-b-2:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.2.12
-  redis-multi-cluster-b-3:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.2.13
-  redis-multi-cluster-b:
-    image: redis:6
-    command: redis-cli -p 6379 --cluster create 10.0.2.11:6379 10.0.2.12:6379 10.0.2.13:6379 --cluster-replicas 0 --cluster-yes
-    depends_on:
-      - redis-multi-cluster-b-1
-      - redis-multi-cluster-b-2
-      - redis-multi-cluster-b-3
-    networks:
-      redis:
-        ipv4_address: 10.0.2.2
-
-  redis-multi-cluster-c-1:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.3.11
-  redis-multi-cluster-c-2:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.3.12
-  redis-multi-cluster-c-3:
-    image: redis:6
-    command: redis-server /etc/redis/redis.conf
-    volumes:
-      - type: bind
-        source: ./cluster.redis.conf
-        target: /etc/redis/redis.conf
-    networks:
-      redis:
-        ipv4_address: 10.0.3.13
-  redis-multi-cluster-c:
-    image: redis:6
-    command: redis-cli -p 6379 --cluster create 10.0.3.11:6379 10.0.3.12:6379 10.0.3.13:6379 --cluster-replicas 0 --cluster-yes
-    depends_on:
-      - redis-multi-cluster-c-1
-      - redis-multi-cluster-c-2
-      - redis-multi-cluster-c-3
-    networks:
-      redis:
-        ipv4_address: 10.0.3.2
-
-  # This container installs node modules into the node_modules volume.
-  installer:
-    image: node:16
-    working_dir: /workspace
-    command: yarn
+  deps_cacher:
+    image: denoland/deno:ubuntu
+    working_dir: /app
     environment:
-      NODE_ENV: development
+      - DENO_DIR=/app/deno_cache
     volumes:
-      - type: bind
-        source: .
-        target: /workspace
-      - type: volume
-        source: node_modules
-        target: /workspace/node_modules
-
-  # This container watches for changes and builds the application.
+      - .:/app
+      - deno_cache:/app/deno_cache
+    command: deno cache deps.ts
+    # command: deno cache /app/deps.ts
+  
   builder:
     depends_on:
-      - installer
-    image: node:16
-    working_dir: /workspace
-    entrypoint: ./scripts/await.sh node_modules/.bin/tsc
-    command: yarn build:development
-    tty: true
+      - deps_cacher
+    image: denoland/deno:ubuntu
+    working_dir: /app
     environment:
-      NODE_ENV: development
+      - DENO_DIR=/app/deno_cache
     volumes:
-      - type: bind
-        source: .
-        target: /workspace
-      - type: volume
-        source: node_modules
-        target: /workspace/node_modules
-
-  # This container runs the tests.
+      - .:/app
+      - deno_cache:/app/deno_cache
+    entrypoint: #entrypoint ??
+    tty: true
+    command: # which image to build
+  
   runner:
     depends_on:
       - builder
       - redis-single-instance
-      - redis-multi-instance-a
-      - redis-multi-instance-b
-      - redis-multi-instance-c
       - redis-single-cluster-1
       - redis-single-cluster-2
       - redis-single-cluster-3
@@ -271,33 +124,17 @@ services:
       - redis-single-cluster-5
       - redis-single-cluster-6
       - redis-single-cluster
-      - redis-multi-cluster-a-1
-      - redis-multi-cluster-a-2
-      - redis-multi-cluster-a-3
-      - redis-multi-cluster-a
-      - redis-multi-cluster-b-1
-      - redis-multi-cluster-b-2
-      - redis-multi-cluster-b-3
-      - redis-multi-cluster-b
-      - redis-multi-cluster-c-1
-      - redis-multi-cluster-c-2
-      - redis-multi-cluster-c-3
-      - redis-multi-cluster-c
-    image: node:16
-    working_dir: /workspace
-    entrypoint: ./scripts/await.sh node_modules/.bin/ava ./scripts/await.sh dist/esm/index.js
-    command: yarn test:development
-    tty: true
+    image: denoland/deno:ubunutu
+    working_dir: /app
     environment:
-      NODE_ENV: development
+      - DENO_DIR=/app/deno_cache
     volumes:
-      - type: bind
-        source: .
-        target: /workspace
-      - type: volume
-        source: node_modules
-        target: /workspace/node_modules
+      - .:/app
+      - deno_cache:/app/deno_cache
+    entrypoint: #entrypoint ??
+    tty: true
     networks:
       default:
       redis:
         ipv4_address: 10.0.10.3
+    command: # run tests
