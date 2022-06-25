@@ -3,6 +3,10 @@ import test, { ExecutionContext } from "ava";
 import Redis, { Redis as Client, Cluster } from "ioredis";
 import Redlock, { ExecutionError, ResourceLockedError } from "./index.js";
 
+async function wait(ms: number): Promise<number> {
+  return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
+}
+
 async function fail(
   t: ExecutionContext<unknown>,
   error: unknown
@@ -169,6 +173,28 @@ function run(
       t.is(await redisA.get("{redlock}a"), null);
       t.is(await redisB.get("{redlock}a"), null);
       t.is(await redisC.get("{redlock}a"), null);
+    } catch (error) {
+      fail(t, error);
+    }
+  });
+
+  test(`${namespace} - releasing expired lock doesn't fail`, async (t) => {
+    try {
+      const redlock = new Redlock([redisA, redisB, redisC]);
+
+      const duration = 1000;
+
+      // Acquire a lock.
+      const lock = await redlock.acquire(["{redlock}a"], duration);
+
+      // Wait for duration + drift to be sure that lock has expired
+      await wait(duration + redlock.calculateDrift(duration));
+
+      // Release the lock.
+      await lock.release();
+      t.is(await redisA.get("{redlock}a"), null, "The lock was not released");
+      t.is(await redisB.get("{redlock}a"), null, "The lock was not released");
+      t.is(await redisC.get("{redlock}a"), null, "The lock was not released");
     } catch (error) {
       fail(t, error);
     }
