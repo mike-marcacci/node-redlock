@@ -26,7 +26,7 @@ A redlock object is instantiated with an array of at least one redis client and 
 
 ```ts
 import Client from "ioredis";
-import Redlock from "./redlock";
+import Redlock from "redlock";
 
 const redisA = new Client({ host: "a.redis.example.com" });
 const redisB = new Client({ host: "b.redis.example.com" });
