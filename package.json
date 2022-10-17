@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@types/ioredis": "^4.28.8",
-    "@types/node": "^17.0.21",
+    "@types/node": "^18.11.0",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
     "ava": "^4.1.0",
