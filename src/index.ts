@@ -5,7 +5,7 @@ import { EventEmitter } from "events";
 // 14 reaches its end-of-life, this can be removed.
 import { AbortController as PolyfillAbortController } from "node-abort-controller";
 
-import { Redis as IORedisClient, Cluster as IORedisCluster } from "ioredis";
+import type { Redis as IORedisClient, Cluster as IORedisCluster } from "ioredis";
 type Client = IORedisClient | IORedisCluster;
 
 // Define script constants.
