@@ -552,7 +552,12 @@ export default class Redlock extends EventEmitter {
       let result: number;
       try {
         // Attempt to evaluate the script by its hash.
-        const shaResult = await client.evalsha(script.hash, keys.length, ...keys, ...args);
+        const shaResult = await client.evalsha(
+          script.hash,
+          keys.length,
+          ...keys,
+          ...args
+        );
         if (typeof shaResult !== "number") {
           throw new Error(
             `Unexpected result of type ${typeof shaResult} returned from redis.`
@@ -569,7 +574,12 @@ export default class Redlock extends EventEmitter {
         ) {
           throw error;
         }
-        const rawResult = await client.eval(script.value, keys.length, ...keys, ...args);
+        const rawResult = await client.eval(
+          script.value,
+          keys.length,
+          ...keys,
+          ...args
+        );
 
         if (typeof rawResult !== "number") {
           throw new Error(
