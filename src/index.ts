@@ -88,6 +88,7 @@ export type ExecutionStats = {
  */
 export type ExecutionResult = {
   attempts: ReadonlyArray<Promise<ExecutionStats>>;
+  start: number;
 };
 
 /**
@@ -302,11 +303,10 @@ export default class Redlock extends EventEmitter {
       throw new Error("Duration must be an integer value in milliseconds.");
     }
 
-    const start = Date.now();
     const value = this._random();
 
     try {
-      const { attempts } = await this._execute(
+      const { attempts, start } = await this._execute(
         this.scripts.acquireScript,
         resources,
         [value, duration],
@@ -436,13 +436,13 @@ export default class Redlock extends EventEmitter {
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
-      const { vote, stats } = await this._attemptOperation(script, keys, args);
+      const { vote, stats, start } = await this._attemptOperation(script, keys, args);
 
       attempts.push(stats);
 
       // The operation achieved a quorum in favor.
       if (vote === "for") {
-        return { attempts };
+        return { attempts, start };
       }
 
       // Wait before reattempting.
@@ -472,9 +472,12 @@ export default class Redlock extends EventEmitter {
     keys: string[],
     args: (string | number)[]
   ): Promise<
-    | { vote: "for"; stats: Promise<ExecutionStats> }
-    | { vote: "against"; stats: Promise<ExecutionStats> }
+    | { vote: "for"; stats: Promise<ExecutionStats>; start: number;}
+    | { vote: "against"; stats: Promise<ExecutionStats>; start: number; }
   > {
+    
+    const start = Date.now();
+
     return await new Promise((resolve) => {
       const clientResults = [];
       for (const client of this.clients) {
@@ -511,6 +514,7 @@ export default class Redlock extends EventEmitter {
           resolve({
             vote: "for",
             stats: statsPromise,
+            start
           });
         }
 
@@ -519,6 +523,7 @@ export default class Redlock extends EventEmitter {
           resolve({
             vote: "against",
             stats: statsPromise,
+            start
           });
         }
 
