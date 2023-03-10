@@ -436,7 +436,11 @@ export default class Redlock extends EventEmitter {
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
-      const { vote, stats, start } = await this._attemptOperation(script, keys, args);
+      const { vote, stats, start } = await this._attemptOperation(
+        script,
+        keys,
+        args
+      );
 
       attempts.push(stats);
 
@@ -472,10 +476,9 @@ export default class Redlock extends EventEmitter {
     keys: string[],
     args: (string | number)[]
   ): Promise<
-    | { vote: "for"; stats: Promise<ExecutionStats>; start: number;}
-    | { vote: "against"; stats: Promise<ExecutionStats>; start: number; }
+    | { vote: "for"; stats: Promise<ExecutionStats>; start: number }
+    | { vote: "against"; stats: Promise<ExecutionStats>; start: number }
   > {
-    
     const start = Date.now();
 
     return await new Promise((resolve) => {
@@ -514,7 +517,7 @@ export default class Redlock extends EventEmitter {
           resolve({
             vote: "for",
             stats: statsPromise,
-            start
+            start,
           });
         }
 
@@ -523,7 +526,7 @@ export default class Redlock extends EventEmitter {
           resolve({
             vote: "against",
             stats: statsPromise,
-            start
+            start,
           });
         }
 
