@@ -375,14 +375,12 @@ export default class Redlock extends EventEmitter {
       throw new Error("Duration must be an integer value in milliseconds.");
     }
 
-    const start = Date.now();
-
     // The lock has already expired.
     if (existing.expiration < Date.now()) {
       throw new ExecutionError("Cannot extend an already-expired lock.", []);
     }
 
-    const { attempts } = await this._execute(
+    const { attempts, start } = await this._execute(
       this.scripts.extendScript,
       existing.resources,
       [existing.value, duration],
