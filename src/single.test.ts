@@ -3,6 +3,10 @@ import test, { ExecutionContext } from "ava";
 import Redis, { Redis as Client, Cluster } from "ioredis";
 import Redlock, { ExecutionError, ResourceLockedError } from "./index.js";
 
+async function wait(ms: number): Promise<number> {
+  return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
+}
+
 async function fail(
   t: ExecutionContext<unknown>,
   error: unknown
@@ -135,6 +139,26 @@ function run(namespace: string, redis: Client | Cluster): void {
     }
   });
 
+  test(`${namespace} - releasing expired lock doesn't fail`, async (t) => {
+    try {
+      const redlock = new Redlock([redis]);
+
+      const duration = 1000;
+
+      // Acquire a lock.
+      const lock = await redlock.acquire(["{redlock}a"], duration);
+
+      // Wait for duration + drift to be sure that lock has expired
+      await wait(duration + redlock.calculateDrift(duration));
+
+      // Release the lock.
+      await lock.release();
+      t.is(await redis.get("{redlock}a"), null, "The lock was not released");
+    } catch (error) {
+      fail(t, error);
+    }
+  });
+
   test(`${namespace} - acquires, extends, and releases a multi-resource lock`, async (t) => {
     try {
       const redlock = new Redlock([redis]);
@@ -194,6 +218,30 @@ function run(namespace: string, redis: Client | Cluster): void {
       await lock.release();
       t.is(await redis.get("{redlock}a1"), null);
       t.is(await redis.get("{redlock}a2"), null);
+    } catch (error) {
+      fail(t, error);
+    }
+  });
+
+  test(`${namespace} - releasing expired multi-resource lock doesn't fail`, async (t) => {
+    try {
+      const redlock = new Redlock([redis]);
+
+      const duration = 1000;
+
+      // Acquire a lock.
+      const lock = await redlock.acquire(
+        ["{redlock}a1", "{redlock}a2"],
+        duration
+      );
+
+      // Wait for duration + drift to be sure that lock has expired
+      await wait(duration + redlock.calculateDrift(duration));
+
+      // Release the lock.
+      await lock.release();
+      t.is(await redis.get("{redlock}a1"), null, "The lock was not released");
+      t.is(await redis.get("{redlock}a2"), null, "The lock was not released");
     } catch (error) {
       fail(t, error);
     }

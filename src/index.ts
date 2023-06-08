@@ -313,12 +313,7 @@ export default class Redlock extends EventEmitter {
         settings
       );
 
-      // Add 2 milliseconds to the drift to account for Redis expires precision,
-      // which is 1 ms, plus the configured allowable drift factor.
-      const drift =
-        Math.round(
-          (settings?.driftFactor ?? this.settings.driftFactor) * duration
-        ) + 2;
+      const drift = this.calculateDrift(duration, settings);
 
       return new Lock(
         this,
@@ -351,6 +346,12 @@ export default class Redlock extends EventEmitter {
     lock: Lock,
     settings?: Partial<Settings>
   ): Promise<ExecutionResult> {
+    // Check if lock already expired and quit early
+    if (lock.expiration < Date.now()) {
+      const attempts: Promise<ExecutionStats>[] = [];
+      return Promise.resolve({ attempts });
+    }
+
     // Immediately invalidate the lock.
     lock.expiration = 0;
 
@@ -360,6 +361,22 @@ export default class Redlock extends EventEmitter {
       lock.resources,
       [lock.value],
       settings
+    );
+  }
+
+  /**
+   * This method calculates drift for the provided `duration`.
+   */
+  public calculateDrift(
+    duration: number,
+    settings?: Partial<Settings>
+  ): number {
+    // Add 2 milliseconds to the drift to account for Redis expires precision,
+    // which is 1 ms, plus the configured allowable drift factor.
+    return (
+      Math.round(
+        (settings?.driftFactor ?? this.settings.driftFactor) * duration
+      ) + 2
     );
   }
 
@@ -390,12 +407,7 @@ export default class Redlock extends EventEmitter {
     // Invalidate the existing lock.
     existing.expiration = 0;
 
-    // Add 2 milliseconds to the drift to account for Redis expires precision,
-    // which is 1 ms, plus the configured allowable drift factor.
-    const drift =
-      Math.round(
-        (settings?.driftFactor ?? this.settings.driftFactor) * duration
-      ) + 2;
+    const drift = this.calculateDrift(duration, settings);
 
     const replacement = new Lock(
       this,
