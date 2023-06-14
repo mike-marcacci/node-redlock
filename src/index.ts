@@ -313,6 +313,8 @@ export default class Redlock extends EventEmitter {
         settings
       );
 
+      const start = Date.now();
+
       // Add 2 milliseconds to the drift to account for Redis expires precision,
       // which is 1 ms, plus the configured allowable drift factor.
       const drift =
