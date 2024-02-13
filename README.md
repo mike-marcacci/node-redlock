@@ -66,8 +66,10 @@ The `using` method wraps and executes a routine in the context of an auto-extend
 
 The first parameter is an array of resources to lock; the second is the requested lock duration in milliseconds, which MUST NOT contain values after the decimal.
 
+The resource keys must follow the convention `key:value`, where `key` is a unique identifier for the resource and `value` is the value of the resource. For example, if you are doing a lock based on a user's account id, you might use `account:123` as the resource key.
+
 ```ts
-await redlock.using([senderId, recipientId], 5000, async (signal) => {
+await redlock.using([`senderId:${senderId}`, `recipientId:${recipientId}`], 5000, async (signal) => {
   // Do something...
   await something();
 
@@ -85,7 +87,7 @@ Alternatively, locks can be acquired and released directly:
 
 ```ts
 // Acquire a lock.
-let lock = await redlock.acquire(["a"], 5000);
+let lock = await redlock.acquire(["resource-key:resource-value"], 5000);
 try {
   // Do something...
   await something();
