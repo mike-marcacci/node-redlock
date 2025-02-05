@@ -431,6 +431,11 @@ export default class Redlock extends EventEmitter {
     const maxAttempts =
       settings.retryCount === -1 ? Infinity : settings.retryCount + 1;
 
+    // In case of maxAttemps is infinity, it would cause memory leak when the type routine param of this.using()
+    // is a non-stop job. E.g. subscription to an external server.
+    // so limit the maxInfinityAttempts should prevent that issue
+    const maxInfinityAttempts = 20;
+
     const attempts: Promise<ExecutionStats>[] = [];
 
     while (true) {
@@ -440,7 +445,8 @@ export default class Redlock extends EventEmitter {
         args
       );
 
-      attempts.push(stats);
+      if (maxAttempts !== Infinity || attempts.length < maxInfinityAttempts)
+        attempts.push(stats);
 
       // The operation achieved a quorum in favor.
       if (vote === "for") {
