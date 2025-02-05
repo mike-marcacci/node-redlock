@@ -440,7 +440,7 @@ export default class Redlock extends EventEmitter {
         args
       );
 
-      if (maxAttempts !== Infinity) attempts.push(stats);
+      attempts.push(stats);
 
       // The operation achieved a quorum in favor.
       if (vote === "for") {
