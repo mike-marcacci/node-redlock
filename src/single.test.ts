@@ -419,6 +419,52 @@ function run(namespace: string, redis: Client | Cluster): void {
     }
   });
 
+  test(`${namespace} - individual locks can be delayed`, async (t) => {
+    try {
+      const redlock = new Redlock([redis]);
+
+      const duration = Math.floor(Number.MAX_SAFE_INTEGER / 10);
+
+      // Acquire a lock.
+      const lock = await redlock.acquire(["{redlock}cx"], duration);
+      t.is(
+        await redis.get("{redlock}cx"),
+        lock.value,
+        "The lock value was incorrect."
+      );
+      t.is(
+        Math.floor((await redis.pttl("{redlock}cx")) / 200),
+        Math.floor(duration / 200),
+        "The lock expiration was off by more than 200ms"
+      );
+
+      // Attempt to acquire another lock on the same resource.
+      const lock2Promise = redlock.acquire(["{redlock}cx"], duration);
+      lock2Promise.catch(() => {
+        // Node has made some very bad decisions about how to handle promises
+        // that reject before they are handled. This is a workaround.
+      });
+
+      // Release the first lock.
+      await lock.release();
+      t.is(await redis.get("{redlock}cx"), null);
+
+      // Ensure the second lock was acquired.
+      const lock2 = await lock2Promise;
+      t.is(
+        await redis.get("{redlock}cx"),
+        lock2.value,
+        "The lock value was incorrect."
+      );
+
+      // Release the second lock.
+      await lock2.release();
+      t.is(await redis.get("{redlock}cx"), null);
+    } catch (error) {
+      fail(t, error);
+    }
+  });
+
   test(`${namespace} - the \`using\` helper acquires, extends, and releases locks`, async (t) => {
     try {
       const redlock = new Redlock([redis]);

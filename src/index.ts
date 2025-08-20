@@ -149,15 +149,19 @@ export class Lock {
     public readonly resources: string[],
     public readonly value: string,
     public readonly attempts: ReadonlyArray<Promise<ExecutionStats>>,
-    public expiration: number
+    public expiration: number,
+    public settings?: Partial<Settings>
   ) {}
 
-  async release(): Promise<ExecutionResult> {
-    return this.redlock.release(this);
+  async release(settings?: Partial<Settings>): Promise<ExecutionResult> {
+    return this.redlock.release(this, { ...this.settings, ...settings });
   }
 
-  async extend(duration: number): Promise<Lock> {
-    return this.redlock.extend(this, duration);
+  async extend(duration: number, settings?: Partial<Settings>): Promise<Lock> {
+    return this.redlock.extend(this, duration, {
+      ...this.settings,
+      ...settings,
+    });
   }
 }
 
@@ -325,7 +329,8 @@ export default class Redlock extends EventEmitter {
         resources,
         value,
         attempts,
-        start + duration - drift
+        start + duration - drift,
+        settings
       );
     } catch (error) {
       // If there was an error acquiring the lock, release any partial lock
@@ -402,7 +407,8 @@ export default class Redlock extends EventEmitter {
       existing.resources,
       existing.value,
       attempts,
-      start + duration - drift
+      start + duration - drift,
+      settings
     );
 
     return replacement;
@@ -451,15 +457,13 @@ export default class Redlock extends EventEmitter {
       // Wait before reattempting.
       if (attempts.length < maxAttempts) {
         await new Promise((resolve) => {
-          setTimeout(
-            resolve,
-            Math.max(
-              0,
-              settings.retryDelay +
-                Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
-            ),
-            undefined
+          const delay = Math.max(
+            0,
+            settings.retryDelay +
+              Math.floor((Math.random() * 2 - 1) * settings.retryJitter)
           );
+
+          setTimeout(resolve, delay, undefined);
         });
       } else {
         throw new ExecutionError(
