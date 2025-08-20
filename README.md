@@ -73,6 +73,8 @@ await redlock.using([senderId, recipientId], 5000, async (signal) => {
 
   // Make sure any attempted lock extension has not failed.
   if (signal.aborted) {
+    // Note: The error thrown out of `redlock.using` will not be `signal.error` but rather "The operation was unable to achieve a quorum during its retry window."
+    //       and that's after retrying to release the lock (after 2-3 seconds if you use the default settings).
     throw signal.error;
   }
 
