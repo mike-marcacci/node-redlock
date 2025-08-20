@@ -67,9 +67,9 @@ The `using` method wraps and executes a routine in the context of an auto-extend
 The first parameter is an array of resources to lock; the second is the requested lock duration in milliseconds, which MUST NOT contain values after the decimal.
 
 ```ts
-await redlock.using([senderId, recipientId], 5000, async (signal) => {
+await redlock.using(["foo", "bar"], 5000, async (signal) => {
   // Do something...
-  await something();
+  await something("foo");
 
   // Make sure any attempted lock extension has not failed.
   if (signal.aborted) {
@@ -79,7 +79,7 @@ await redlock.using([senderId, recipientId], 5000, async (signal) => {
   }
 
   // Do something else...
-  await somethingElse();
+  await somethingElse("bar");
 });
 ```
 
