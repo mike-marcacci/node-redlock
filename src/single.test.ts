@@ -34,7 +34,7 @@ ${(await Promise.all(error.attempts))
 async function waitForCluster(redis: Cluster): Promise<void> {
   async function checkIsReady(): Promise<boolean> {
     return (
-      ((await redis.cluster("info")) as string).match(
+      ((await redis.cluster("INFO")) as string).match(
         /^cluster_state:(.+)$/m
       )?.[1] === "ok"
     );
