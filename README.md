@@ -162,7 +162,7 @@ Assume you are using eventually-consistent redis replication, and you acquire a 
 
 This is why redlock allows you to specify multiple independent nodes/clusters: by requiring consensus between them, we can safely take out or fail-over a minority of nodes without invalidating active locks.
 
-To learn more about the the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
+To learn more about the algorithm, check out the [redis distlock page](http://redis.io/topics/distlock).
 
 Also note that when acquiring a lock on multiple resources, commands are executed in a single call to redis. Redis clusters require that all keys exist in a command belong to the same node. **If you are using a redis cluster or clusters and need to lock multiple resources together you MUST use [redis hash tags](https://redis.io/topics/cluster-spec#keys-hash-tags) (ie. use `ignored{considered}ignored{ignored}` notation in resource strings) to ensure that all keys resolve to the same node.** Chosing what data to include must be done thoughtfully, because representing the same conceptual resource in more than one way defeats the purpose of acquiring a lock. Accordingly, it's generally wise to use a single very generic prefix to ensure that ALL lock keys resolve to the same node, such as `{redlock}my_resource`. This is the most straightforward strategy and may be appropriate when the cluster has additional purposes. However, when locks will always naturally share a common attribute (for example, an organization/tenant ID), this may be used for better key distribution and cluster utilization. You can also acheive ideal utilization by completely omiting a hash tag if you do _not_ need to lock multiple resources at the same time.
 
