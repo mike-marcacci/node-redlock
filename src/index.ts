@@ -440,7 +440,8 @@ export default class Redlock extends EventEmitter {
         args
       );
 
-      attempts.push(stats);
+      // Infinite retry may result in memory leak when routine() is on hold for long time
+      if (maxAttempts !== Infinity) attempts.push(stats);
 
       // The operation achieved a quorum in favor.
       if (vote === "for") {
