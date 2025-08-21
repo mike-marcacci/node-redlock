@@ -52,7 +52,7 @@
     "@typescript-eslint/parser": "^5.13.0",
     "ava": "^4.1.0",
     "eslint": "^8.10.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^4.0.0",
     "ioredis": "^4.28.5",
     "nodemon": "^2.0.15",
