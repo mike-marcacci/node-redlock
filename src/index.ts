@@ -100,6 +100,7 @@ export interface Settings {
   readonly retryDelay: number;
   readonly retryJitter: number;
   readonly automaticExtensionThreshold: number;
+  readonly valuePrefix: string;
 }
 
 // Define default settings.
@@ -109,6 +110,7 @@ const defaultSettings: Readonly<Settings> = {
   retryDelay: 200,
   retryJitter: 100,
   automaticExtensionThreshold: 500,
+  valuePrefix: '',
 };
 
 // Modifyng this object is forbidden.
@@ -232,6 +234,10 @@ export default class Redlock extends EventEmitter {
         typeof settings.automaticExtensionThreshold === "number"
           ? settings.automaticExtensionThreshold
           : defaultSettings.automaticExtensionThreshold,
+      valuePrefix:
+        typeof settings.valuePrefix === "string"
+          ? settings.valuePrefix
+          : defaultSettings.valuePrefix,
     };
 
     // Use custom scripts and script modifiers.
@@ -303,7 +309,7 @@ export default class Redlock extends EventEmitter {
       throw new Error("Duration must be an integer value in milliseconds.");
     }
 
-    const value = this._random();
+    const value = (settings?.valuePrefix ?? this.settings.valuePrefix) + this._random();
 
     try {
       const { attempts, start } = await this._execute(
