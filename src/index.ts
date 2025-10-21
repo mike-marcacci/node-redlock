@@ -46,14 +46,18 @@ const EXTEND_SCRIPT = `
 const RELEASE_SCRIPT = `
   local count = 0
   for i, key in ipairs(KEYS) do
-    -- Only remove entries for *this* lock value.
-    if redis.call("get", key) == ARGV[1] then
+    local v = redis.call("get", key)
+    if v == false then
+      -- Key already missing/expired: treat as success.
+      count = count + 1
+    elseif v == ARGV[1] then
+      -- Matches our lock value: delete and count as success.
       redis.pcall("del", key)
       count = count + 1
     end
   end
-
-  -- Return the number of entries removed.
+  
+  -- Return the number of entries removed or already missing.
   return count
 `;
 
