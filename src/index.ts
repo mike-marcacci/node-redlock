@@ -10,14 +10,16 @@ type Client = IORedisClient | IORedisCluster;
 
 // Define script constants.
 const ACQUIRE_SCRIPT = `
-  -- Return 0 if an entry already exists.
+  -- Return 0 if an entry already exists with a different lock value.
   for i, key in ipairs(KEYS) do
     if redis.call("exists", key) == 1 then
-      return 0
+      if redis.call("get", key) ~= ARGV[1] then
+        return 0
+      end
     end
   end
 
-  -- Create an entry for each provided key.
+  -- Create or update the entry for each provided key.
   for i, key in ipairs(KEYS) do
     redis.call("set", key, ARGV[1], "PX", ARGV[2])
   end
@@ -156,8 +158,8 @@ export class Lock {
     return this.redlock.release(this);
   }
 
-  async extend(duration: number): Promise<Lock> {
-    return this.redlock.extend(this, duration);
+  async extend(duration: number, settings?: Partial<Settings>): Promise<Lock> {
+    return this.redlock.extend(this, duration, settings);
   }
 }
 
@@ -320,13 +322,15 @@ export default class Redlock extends EventEmitter {
           (settings?.driftFactor ?? this.settings.driftFactor) * duration
         ) + 2;
 
-      return new Lock(
-        this,
-        resources,
-        value,
-        attempts,
-        start + duration - drift
-      );
+      const expiration = start + duration - drift;
+      if (Date.now() >= expiration) {
+        throw new ExecutionError(
+          "The lock validity time has elapsed before quorum was achieved.",
+          attempts
+        );
+      }
+
+      return new Lock(this, resources, value, attempts, expiration);
     } catch (error) {
       // If there was an error acquiring the lock, release any partial lock
       // state that may exist on a minority of clients.
@@ -397,12 +401,29 @@ export default class Redlock extends EventEmitter {
         (settings?.driftFactor ?? this.settings.driftFactor) * duration
       ) + 2;
 
+    const expiration = start + duration - drift;
+    if (Date.now() >= expiration) {
+      await this._execute(
+        this.scripts.releaseScript,
+        existing.resources,
+        [existing.value],
+        { retryCount: 0 }
+      ).catch(() => {
+        // Any error here will be ignored.
+      });
+
+      throw new ExecutionError(
+        "The lock validity time has elapsed before extension was achieved.",
+        attempts
+      );
+    }
+
     const replacement = new Lock(
       this,
       existing.resources,
       existing.value,
       attempts,
-      start + duration - drift
+      expiration
     );
 
     return replacement;
@@ -535,6 +556,20 @@ export default class Redlock extends EventEmitter {
           stats.membershipSize
         ) {
           done();
+
+          // In an even-node configuration, a tie vote can result in all votes
+          // being collected without either side reaching quorumSize. Since a quorum
+          // in favor was not reached, the attempt has failed and must resolve as "against".
+          if (
+            stats.votesFor.size < stats.quorumSize &&
+            stats.votesAgainst.size < stats.quorumSize
+          ) {
+            resolve({
+              vote: "against",
+              stats: statsPromise,
+              start,
+            });
+          }
         }
       };
 
@@ -713,6 +748,8 @@ export default class Redlock extends EventEmitter {
 
     const signal = controller.signal as RedlockAbortSignal;
 
+    let running = true;
+
     function queue(): void {
       timeout = setTimeout(
         () => (extension = extend()),
@@ -724,14 +761,16 @@ export default class Redlock extends EventEmitter {
       timeout = undefined;
 
       try {
-        lock = await lock.extend(duration);
-        queue();
+        lock = await lock.extend(duration, settings);
+        if (running) {
+          queue();
+        }
       } catch (error) {
         if (!(error instanceof Error)) {
           throw new Error(`Unexpected thrown ${typeof error}: ${error}.`);
         }
 
-        if (lock.expiration > Date.now()) {
+        if (running && lock.expiration > Date.now()) {
           return (extension = extend());
         }
 
@@ -745,26 +784,59 @@ export default class Redlock extends EventEmitter {
     let lock = await this.acquire(resources, duration, settings);
     queue();
 
+    let routineResult: T | undefined = undefined;
+    let routineError: unknown;
+    let routineSucceeded = false;
+
     try {
-      return await routine(signal);
-    } finally {
-      // Clean up the timer.
-      if (timeout) {
-        clearTimeout(timeout);
-        timeout = undefined;
-      }
-
-      // Wait for an in-flight extension to finish.
-      if (extension) {
-        await extension.catch(() => {
-          // An error here doesn't matter at all, because the routine has
-          // already completed, and a release will be attempted regardless. The
-          // only reason for waiting here is to prevent possible contention
-          // between the extension and release.
-        });
-      }
-
-      await lock.release();
+      routineResult = await routine(signal);
+      routineSucceeded = true;
+    } catch (error) {
+      routineError = error;
     }
+
+    running = false;
+
+    // Clean up the timer.
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = undefined;
+    }
+
+    // Wait for an in-flight extension to finish.
+    if (extension) {
+      await extension.catch(() => {
+        // An error here doesn't matter at all, because the routine has
+        // already completed, and a release will be attempted regardless. The
+        // only reason for waiting here is to prevent possible contention
+        // between the extension and release.
+      });
+    }
+
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = undefined;
+    }
+
+    let releaseError: unknown;
+    try {
+      await lock.release();
+    } catch (error) {
+      releaseError = error;
+    }
+
+    if (!routineSucceeded) {
+      throw routineError;
+    }
+
+    if (signal.aborted && signal.error) {
+      throw signal.error;
+    }
+
+    if (releaseError) {
+      throw releaseError;
+    }
+
+    return routineResult as T;
   }
 }

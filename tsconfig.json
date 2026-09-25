@@ -11,7 +11,15 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": false,
-    "sourceMap": true
+    "sourceMap": true,
+    // Only auto-load @types/node. **This is not a stylistic preference, but a build necessity**:
+    // devDependency `@informalsystems/quint@0.32.0` transitively pulls in
+    // `@types/lodash.clonedeep` → `@types/lodash@4.17.x`, whose .d.ts uses syntax that
+    // TypeScript 4.6 cannot parse (TS1005 '?' expected), causing `tsc` to exit with code 2.
+    // `@types/lodash` is never used by this project; it was merely pulled in by the default auto-inclusion of all `@types/*`.
+    // Restricting `types` still allows `import ... from "ioredis"` to resolve normally via `@types/ioredis`
+    // (`types` only controls **global auto-inclusion**, without affecting explicit module import resolution).
+    "types": ["node"]
   },
   "include": ["./src/**/*"]
 }
